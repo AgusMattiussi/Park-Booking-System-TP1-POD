@@ -1,0 +1,66 @@
+syntax = "proto3";
+ option java_package = "ar.edu.itba.pod.grpc.rideBooking";
+ option java_multiple_files = true;
+
+ import "google/protobuf/wrappers.proto";
+ import "google/protobuf/empty.proto";
+
+ package rideBooking;
+
+service RideBookingService {
+  // 1. Consultar las atracciones
+  rpc getRides(google.protobuf.Empty) returns (GetRideResponse);
+
+  // 2. Consultar la disponibilidad de las atracciones
+  rpc getRideAvailability(GetRideAvailabilityRequest) returns (GetRideAvailabilityResponse);
+
+  // 3. Reservar una atracción
+  rpc bookRide(BookRideRequest) returns (BookRideResponse);
+
+  // 4. Confirmar una reserva pendiente de una atracción a partir del nombre de la atracción , el día del año, el slot de la reserva (en formato HH:MM) y el id de visitante (en formato UUID)
+  rpc confirmBooking(BookRide) returns (BookRideResponse);
+
+  // 5. Cancelar una reserva de una atracción a partir del nombre de la atracción, el día del año, el slot de la reserva (en formato HH:MM) y el id del visitante (en formato UUID)
+  rpc cancelBooking(BookRide) returns (BookRideResponse);
+
+}
+
+message GetRideResponse {
+  repeated Ride rides = 1;
+}
+
+message Ride {
+  google.protobuf.StringValue name = 1;
+  google.protobuf.StringValue opening_time = 2;
+  google.protobuf.StringValue closing_time = 3;
+}
+
+message GetRideAvailabilityRequest {
+  google.protobuf.StringValue day_of_year = 1;
+  optional google.protobuf.StringValue ride_name = 2;
+  optional google.protobuf.StringValue start_slot_time = 3;
+  optional google.protobuf.StringValue end_slot_time = 4;
+}
+
+message GetRideAvailabilityResponse {
+  google.protobuf.Int32Value confirmed_bookings = 1;
+  google.protobuf.Int32Value pending_bookings = 2;
+  optional google.protobuf.Int32Value ride_capacity = 3;
+}
+
+message BookRideRequest {
+  repeated BookRide rides = 1;
+}
+
+message BookRide {
+  google.protobuf.StringValue ride_name = 1;
+  google.protobuf.StringValue day_of_year = 2;
+  google.protobuf.StringValue time_slot = 3;
+  google.protobuf.StringValue visitor_id = 4;
+}
+
+message BookRideResponse {
+  google.protobuf.StringValue response = 1;
+}
+
+
