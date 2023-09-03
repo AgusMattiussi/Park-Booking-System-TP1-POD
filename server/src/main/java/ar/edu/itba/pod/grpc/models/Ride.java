@@ -19,4 +19,24 @@ public class Ride {
         this.slotTime = slotTime;
         this.slotsPerDay = new TreeMap<Date, Map<Time, Integer>>();
     }
+
+    public String getName() {
+        return name;
+    }
+
+    public Time getOpeningTime() {
+        return openingTime;
+    }
+
+    public Time getClosingTime() {
+        return closingTime;
+    }
+
+    public int getSlotTime() {
+        return slotTime;
+    }
+
+    public Map<Date, Map<Time, Integer>> getSlotsPerDay() {
+        return slotsPerDay;
+    }
 }
