@@ -1,0 +1,41 @@
+syntax = "proto3";
+option java_package = "ar.edu.itba.pod.grpc.query";
+option java_multiple_files = true;
+
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/empty.proto";
+
+package rideBooking;
+
+service QueryService {
+  // 1. Consultar la capacidad sugerida, en base a las reservas pendientes, para todas las atracciones del parque para un día
+  rpc queryCapacitySuggestion(QueryDayRequest) returns (CapacitySuggestionResponse);
+
+  // 2.  Consultar las reservas confirmadas para todas las atracciones del parque para un día
+  rpc queryConfirmedBookings(QueryDayRequest) returns (ConfirmedBookingsResponse);
+}
+
+message QueryDayRequest {
+  google.protobuf.Int32Value day_of_year = 1;
+}
+
+message CapacitySuggestionResponse {
+  repeated CapacitySuggestion capacitySuggestions = 1;
+}
+
+message CapacitySuggestion {
+  google.protobuf.StringValue ride_name = 1;
+  google.protobuf.Int32Value suggested_capacity = 2;
+  google.protobuf.StringValue slot = 3;
+}
+
+message ConfirmedBookingsResponse {
+  repeated ConfirmedBooking confirmedBookings = 1;
+}
+
+message ConfirmedBooking {
+  google.protobuf.StringValue ride_name = 1;
+  google.protobuf.StringValue visitor_id = 2;
+  google.protobuf.StringValue slot = 3;
+}
+
