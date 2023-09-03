@@ -1,5 +1,7 @@
 package ar.edu.itba.pod.grpc.models;
 
+import ar.edu.itba.pod.grpc.rideBooking.BookRide;
+
 import java.sql.Time;
 import java.util.*;
 

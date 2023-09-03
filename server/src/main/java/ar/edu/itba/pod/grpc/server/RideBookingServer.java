@@ -1,22 +1,30 @@
 package ar.edu.itba.pod.grpc.server;
 
+import ar.edu.itba.pod.grpc.persistance.RideRepository;
 import ar.edu.itba.pod.grpc.rideBooking.*;
 import com.google.protobuf.Empty;
+import com.google.protobuf.StringValue;
 import io.grpc.stub.StreamObserver;
 import io.grpc.ServerBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 public class RideBookingServer extends RideBookingServiceGrpc.RideBookingServiceImplBase {
 
     private static Logger logger = LoggerFactory.getLogger(Server.class);
+    private final RideRepository rideRepository = RideRepository.getInstance();
 
     public static void main(String[] args) throws InterruptedException, IOException, IOException {
         logger.info(" Server Starting ...");
 
-        int port = 50051;
+        int port = 50001;
         io.grpc.Server server = ServerBuilder.forPort(port)
                 .build();
         server.start();
@@ -41,7 +49,46 @@ public class RideBookingServer extends RideBookingServiceGrpc.RideBookingService
 
     @Override
     public void bookRide(BookRideRequest request, StreamObserver<BookRideResponse> responseObserver) {
-        super.bookRide(request, responseObserver);
+        List<BookRide> ridesToBook = request.getRidesList();
+
+        // TODO: Validaciones
+        int booked = 0;
+
+        StringBuilder responseBuilder = new StringBuilder();
+
+        for (BookRide ride : ridesToBook) {
+            String rideName = ride.getRideName().getValue();
+            String visitorId = ride.getVisitorId().getValue();
+            String day = ride.getDayOfYear().getValue();
+            String slot = ride.getTimeSlot().getValue();
+
+            LocalDate date = LocalDate.parse(day, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            LocalTime time = LocalTime.parse(slot, DateTimeFormatter.ofPattern("HH:mm"));
+            LocalDateTime dateTime = date.atTime(time);
+
+            if(!rideRepository.bookRide(rideName, visitorId, dateTime))
+                continue;
+
+            booked++;
+            //TODO: Status pending o reservado
+            responseBuilder.append(rideName)
+                    .append(" booked for ")
+                    .append(visitorId)
+                    .append(" at ")
+                    .append(dateTime)
+                    .append(" - CONFIRMED")
+                    .append("\n");
+
+        }
+
+        BookRideResponse response = BookRideResponse.newBuilder()
+                                    .setResponse(StringValue.newBuilder()
+                                            .setValue(responseBuilder.toString())
+                                            .build())
+                                    .build();
+
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
     }
 
     @Override
