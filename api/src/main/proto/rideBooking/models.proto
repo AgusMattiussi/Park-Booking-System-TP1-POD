@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package rideBooking;
+
+message RideTime{
+  double open = 1;
+  double close = 2;
+}
+
+enum PassTypeEnum{
+  UNKNOWN = 0;
+  //  cantidad ilimitada de atracciones del parque
+  UNLIMITED =1;
+  //  hasta 3 atracciones del parque (hasta tres reservas pendientes o confirmadas)
+  THREE = 2;
+  // cantidad ilimitada de atracciones del parque para los slots que inicien antes de las 14:00
+  HALF_DAY = 3;
+}

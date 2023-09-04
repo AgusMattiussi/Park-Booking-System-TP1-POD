@@ -1,6 +1,6 @@
-package ar.edu.itba.pod.grpc.persistance;
+package ar.edu.itba.pod.server.persistance;
 
-import ar.edu.itba.pod.grpc.models.Ride;
+import ar.edu.itba.pod.server.Models.Ride;
 
 import java.time.LocalDateTime;
 import java.util.Map;

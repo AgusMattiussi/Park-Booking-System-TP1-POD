@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/empty.proto";
+
+package rideBooking;
+
+service NotifyService {
+  // 1. Registrar a un visitante para que sea notificado de los eventos relacionados a una reserva
+  rpc notifyVisitor(NotifyRequest) returns (Notification);
+
+  // 2.  Anular el registro de un visitante para no recibir más notificaciones
+  rpc notifyRemoveVisitor(NotifyRequest) returns (google.protobuf.Empty);
+}
+
+message NotifyRequest {
+  //  nombre de la atracción,
+  //  el id del visitante (en formato UUID)
+  //  el día del año del pase
+  string ride_name = 1;
+  string visitor_id=2;
+  int32 day_of_year = 3;
+}
+
+
+message Notification {
+  oneof notification {
+    string message = 1;
+  }
+}

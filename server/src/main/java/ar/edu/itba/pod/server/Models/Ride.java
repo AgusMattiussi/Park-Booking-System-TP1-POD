@@ -1,23 +1,21 @@
-package ar.edu.itba.pod.grpc.models;
+package ar.edu.itba.pod.server.Models;
 
-import ar.edu.itba.pod.grpc.rideBooking.BookRide;
 
 import java.sql.Time;
 import java.util.*;
 
 public class Ride {
     private final String name;
-    private final Time openingTime;
-    private final Time closingTime;
+
+    private final RideTime rideTime;
     private final int slotTime;
 
     // <Date, <Slot Time, Capacity>>, ordered by date
     private final Map<Date, Map<Time,Integer>> slotsPerDay;
 
-    public Ride(String name, Time openingTime, Time closingTime, int slotTime) {
+    public Ride(String name, RideTime rideTime, int slotTime) {
         this.name = name;
-        this.openingTime = openingTime;
-        this.closingTime = closingTime;
+        this.rideTime = rideTime;
         this.slotTime = slotTime;
         this.slotsPerDay = new TreeMap<Date, Map<Time, Integer>>();
     }
@@ -26,12 +24,8 @@ public class Ride {
         return name;
     }
 
-    public Time getOpeningTime() {
-        return openingTime;
-    }
-
-    public Time getClosingTime() {
-        return closingTime;
+    public RideTime getRideTime() {
+        return rideTime;
     }
 
     public int getSlotTime() {

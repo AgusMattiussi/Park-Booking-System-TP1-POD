@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/empty.proto";
+import "rideBooking/models.proto";
+package rideBooking;
+
+service AdminParkService {
+  // 1. Agregar una atracción al parque
+  // return if ride is created
+  rpc AddRide(AddRideRequest) returns(google.protobuf.BoolValue);
+  // 2. Agregar un pase de atracciones
+  // return if pass is created
+  rpc AddPassToRide(AddPassRequest) returns(google.protobuf.BoolValue);
+  // 3. Cargar la capacidad de los slots de una atracción
+  rpc AddSlotCapacity(AddSlotCapacityRequest) returns(google.protobuf.BoolValue);
+}
+
+message AddRideRequest{
+  string rideName = 1;
+  RideTime rideTime = 2;
+  int32 slotMinutes = 3;
+}
+
+message AddPassRequest{
+  //id del visitante (en formato UUID), el tipo de pase y el día del año de validez
+  string visitorId = 1;
+  PassTypeEnum passType = 2;
+  int32 validDay = 3;
+}
+
+message AddSlotCapacityRequest{
+  string rideName = 1;
+  int32 validDay = 2;
+  int32 slotCapacity = 3;
+}
