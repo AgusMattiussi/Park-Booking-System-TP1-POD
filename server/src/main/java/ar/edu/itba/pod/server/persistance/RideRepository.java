@@ -1,9 +1,11 @@
 package ar.edu.itba.pod.server.persistance;
 
 import ar.edu.itba.pod.server.Models.Ride;
+import ar.edu.itba.pod.server.Models.RideTime;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -28,8 +30,10 @@ public class RideRepository {
         return instance;
     }
 
-    public void addRide(Ride ride) {
+    public Optional<Ride> addRide(String name, RideTime rideTime, int slotTime) {
+        Ride ride = new Ride(name, rideTime, slotTime);
         this.rides.put(ride.getName(), ride);
+        return Optional.of(ride);
     }
 
     public Ride getRide(String name) {

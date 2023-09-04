@@ -4,6 +4,8 @@ import ar.edu.itba.pod.server.Models.Ride;
 import ar.edu.itba.pod.server.Models.RideTime;
 import ar.edu.itba.pod.server.persistance.RideRepository;
 import com.google.protobuf.BoolValue;
+import com.google.protobuf.Int32Value;
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,25 +14,36 @@ import rideBooking.AdminParkServiceOuterClass.AddRideRequest;
 import rideBooking.AdminParkServiceOuterClass.AddPassRequest;
 import rideBooking.AdminParkServiceOuterClass.AddSlotCapacityRequest;
 
+import java.util.Optional;
+
 
 public class AdminParkServer extends AdminParkServiceGrpc.AdminParkServiceImplBase{
     private final static Logger logger = LoggerFactory.getLogger(AdminParkServer.class);
     private static final RideRepository repository = RideRepository.getInstance();
 
     @Override
-    public void addRide(AddRideRequest request, StreamObserver<BoolValue> responseObserver) {
-        Ride newRide = new Ride(request.getRideName(), new RideTime(request.getRideTime()), request.getSlotMinutes());
-        repository.addRide(newRide);
-
+    public void addRide(AddRideRequest request, StreamObserver<Int32Value> responseObserver) {
+        Optional<Ride> newRide = repository.addRide(request.getRideName(), new RideTime(request.getRideTime()), request.getSlotMinutes());
+        newRide.ifPresentOrElse(
+                ride -> {
+                    responseObserver.onNext(Int32Value.of(ride.getId()));
+                    responseObserver.onCompleted();
+                },
+                () -> {
+                    final String msg = "Could not create Ride " + request.getRideName();
+                    logger.error(msg);
+                    responseObserver.onError(Status.INTERNAL.withDescription(msg).asRuntimeException());
+                }
+        );
     }
 
     @Override
-    public void addPassToRide(AddPassRequest request, StreamObserver<BoolValue> responseObserver) {
+    public void addPassToRide(AddPassRequest request, StreamObserver<Int32Value> responseObserver) {
         super.addPassToRide(request, responseObserver);
     }
 
     @Override
-    public void addSlotCapacity(AddSlotCapacityRequest request, StreamObserver<BoolValue> responseObserver) {
+    public void addSlotCapacity(AddSlotCapacityRequest request, StreamObserver<Int32Value> responseObserver) {
         super.addSlotCapacity(request, responseObserver);
     }
 }

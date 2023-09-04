@@ -7,13 +7,14 @@ package rideBooking;
 
 service AdminParkService {
   // 1. Agregar una atracción al parque
-  // return if ride is created
-  rpc AddRide(AddRideRequest) returns(google.protobuf.BoolValue);
+  // return ride id
+  rpc AddRide(AddRideRequest) returns(google.protobuf.Int32Value);
   // 2. Agregar un pase de atracciones
-  // return if pass is created
-  rpc AddPassToRide(AddPassRequest) returns(google.protobuf.BoolValue);
+  // return pass id
+  rpc AddPassToRide(AddPassRequest) returns(google.protobuf.Int32Value);
   // 3. Cargar la capacidad de los slots de una atracción
-  rpc AddSlotCapacity(AddSlotCapacityRequest) returns(google.protobuf.BoolValue);
+  // return capacity id
+  rpc AddSlotCapacity(AddSlotCapacityRequest) returns(google.protobuf.Int32Value);
 }
 
 message AddRideRequest{
