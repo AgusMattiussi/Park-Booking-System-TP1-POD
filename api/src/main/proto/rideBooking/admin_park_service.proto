@@ -9,9 +9,9 @@ service AdminParkService {
   // 1. Agregar una atracción al parque
   // return ride id
   rpc AddRide(AddRideRequest) returns(google.protobuf.Int32Value);
-  // 2. Agregar un pase de atracciones
-  // return pass id
-  rpc AddPassToRide(AddPassRequest) returns(google.protobuf.Int32Value);
+  // 2. Agregar un pase de atracciones al parque
+  // return if pass is created
+  rpc AddPassToPark(AddPassRequest) returns(google.protobuf.BoolValue);
   // 3. Cargar la capacidad de los slots de una atracción
   // return capacity id
   rpc AddSlotCapacity(AddSlotCapacityRequest) returns(google.protobuf.Int32Value);

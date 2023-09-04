@@ -1,5 +1,6 @@
 package ar.edu.itba.pod.server.server;
 
+import ar.edu.itba.pod.server.Models.ParkPass;
 import ar.edu.itba.pod.server.Models.Ride;
 import ar.edu.itba.pod.server.Models.RideTime;
 import ar.edu.itba.pod.server.persistance.RideRepository;
@@ -15,6 +16,7 @@ import rideBooking.AdminParkServiceOuterClass.AddPassRequest;
 import rideBooking.AdminParkServiceOuterClass.AddSlotCapacityRequest;
 
 import java.util.Optional;
+import java.util.UUID;
 
 
 public class AdminParkServer extends AdminParkServiceGrpc.AdminParkServiceImplBase{
@@ -38,8 +40,19 @@ public class AdminParkServer extends AdminParkServiceGrpc.AdminParkServiceImplBa
     }
 
     @Override
-    public void addPassToRide(AddPassRequest request, StreamObserver<Int32Value> responseObserver) {
-        super.addPassToRide(request, responseObserver);
+    public void addPassToPark(AddPassRequest request, StreamObserver<BoolValue> responseObserver) {
+        Optional<ParkPass> newPassToPark = repository.addParkPass(UUID.fromString(request.getVisitorId()), request.getPassType(), request.getValidDay());
+        newPassToPark.ifPresentOrElse(
+                parkPass -> {
+                    responseObserver.onNext(BoolValue.of(true));
+                    responseObserver.onCompleted();
+                },
+                () -> {
+                    final String msg = "Could not create Pass for visitor " + request.getVisitorId() + " for the day " + request.getValidDay();
+                    logger.error(msg);
+                    responseObserver.onError(Status.INTERNAL.withDescription(msg).asRuntimeException());
+                }
+        );
     }
 
     @Override
