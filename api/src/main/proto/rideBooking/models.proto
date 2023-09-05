@@ -3,8 +3,8 @@ syntax = "proto3";
 package rideBooking;
 
 message RideTime{
-  double open = 1;
-  double close = 2;
+  string open = 1;
+  string close = 2;
 }
 
 enum PassTypeEnum{
