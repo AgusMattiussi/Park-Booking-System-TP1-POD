@@ -1,22 +1,16 @@
 package ar.edu.itba.pod.server.persistance;
 
 import ar.edu.itba.pod.server.Models.ParkPass;
+import ar.edu.itba.pod.server.Models.Reservation;
 import ar.edu.itba.pod.server.Models.Ride;
 import ar.edu.itba.pod.server.Models.RideTime;
-import ar.edu.itba.pod.server.exceptions.AlreadyExistsException;
-import ar.edu.itba.pod.server.exceptions.InvalidPassTypeException;
-import ar.edu.itba.pod.server.exceptions.InvalidTimeException;
-import ar.edu.itba.pod.server.exceptions.SlotCapacityException;
-import com.google.protobuf.Empty;
+import ar.edu.itba.pod.server.exceptions.*;
 import rideBooking.Models;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
-import java.util.Date;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -63,6 +57,11 @@ public class RideRepository {
         return Optional.of(ride);
     }
 
+    private void invalidDate(int day){
+        if (day > 365 || day < 1){
+            throw new InvalidTimeException("The day must be between 1 and 365");
+        }
+    }
     public Optional<ParkPass> addParkPass(UUID visitorId, Models.PassTypeEnum type, int day) {
 //        Falla:
 //        si el tipo de pase es inválido
@@ -70,9 +69,7 @@ public class RideRepository {
             throw new InvalidPassTypeException("There are 3 valid pass types [UNLIMITED, THREE, HALF_DAY]");
         }
 //        si el día del año es inválido.
-        if (day > 365 || day < 1){
-            throw new InvalidTimeException("The day must be between 1 and 365");
-        }
+        invalidDate(day);
         if(this.parkPasses.containsKey(visitorId)){
             if(this.parkPasses.get(visitorId).containsKey(day)){
 //              si ya existe un pase para el visitante para el día indicado
@@ -86,6 +83,30 @@ public class RideRepository {
         return Optional.of(parkPass);
     }
 
+    public void addSlotsPerDay(String rideName, int day, int capacity){
+//        Falla:
+//        si la atracción no existe
+        if(!this.rides.containsKey(rideName)){
+            throw new NotFoundRideException("There is no ride called " + rideName);
+        }
+//        si el día es inválido
+        invalidDate(day);
+//        si la capacidad es negativa
+        if(capacity < 0){
+            throw new SlotCapacityException("Slot capacity must be positive");
+        }
+
+        Map<Integer, Map<Integer, List<Reservation>>> slotsPerDay = this.rides.get(rideName).getSlotsPerDay();
+        if (slotsPerDay.containsKey(day)){
+//            si ya se cargó una capacidad para esa atracción y día
+            throw new SlotCapacityException("There already is a loaded capacity for ride " + rideName + " for day " + day);
+        }
+        slotsPerDay.put(day, new TreeMap<>());
+        slotsPerDay.get(day).put(capacity, new ArrayList<>(capacity));
+
+//        TODO: Esta carga confirmará, reubicará o cancelará las reservas con estado pendiente que ya se hayan realizado para esta atracción para el día indicado.
+
+    }
     public Ride getRide(String name) {
         return this.rides.get(name);
     }
