@@ -11,10 +11,13 @@ import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rideBooking.AdminParkServiceGrpc;
+import rideBooking.AdminParkServiceOuterClass;
 import rideBooking.AdminParkServiceOuterClass.AddRideRequest;
 import rideBooking.AdminParkServiceOuterClass.AddPassRequest;
 import rideBooking.AdminParkServiceOuterClass.AddSlotCapacityRequest;
+import rideBooking.AdminParkServiceOuterClass.SlotCapacityResponse;
 
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -56,7 +59,9 @@ public class AdminParkServer extends AdminParkServiceGrpc.AdminParkServiceImplBa
     }
 
     @Override
-    public void addSlotCapacity(AddSlotCapacityRequest request, StreamObserver<Int32Value> responseObserver) {
-        super.addSlotCapacity(request, responseObserver);
+    public void addSlotCapacity(AddSlotCapacityRequest request, StreamObserver<SlotCapacityResponse> responseObserver) {
+        SlotCapacityResponse reservations_amount = repository.addSlotsPerDay(request.getRideName(), request.getValidDay(), request.getSlotCapacity());
+        responseObserver.onNext(reservations_amount);
+        responseObserver.onCompleted();
     }
 }

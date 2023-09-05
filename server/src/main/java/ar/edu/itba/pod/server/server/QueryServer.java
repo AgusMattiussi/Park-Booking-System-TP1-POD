@@ -10,9 +10,8 @@ import rideBooking.QueryServiceGrpc;
 import rideBooking.QueryServiceOuterClass;
 import rideBooking.QueryServiceOuterClass.CapacitySuggestionResponse;
 import rideBooking.QueryServiceOuterClass.ConfirmedBookingsResponse;
+import rideBooking.Models.ReservationState;
 
-
-import java.sql.Time;
 import java.time.LocalTime;
 import java.util.*;
 

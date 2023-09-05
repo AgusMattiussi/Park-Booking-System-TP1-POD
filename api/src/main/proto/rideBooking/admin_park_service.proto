@@ -14,7 +14,7 @@ service AdminParkService {
   rpc AddPassToPark(AddPassRequest) returns(google.protobuf.BoolValue);
   // 3. Cargar la capacidad de los slots de una atracción
   // return capacity id
-  rpc AddSlotCapacity(AddSlotCapacityRequest) returns(google.protobuf.Int32Value);
+  rpc AddSlotCapacity(AddSlotCapacityRequest) returns(SlotCapacityResponse);
 }
 
 message AddRideRequest{
@@ -34,4 +34,10 @@ message AddSlotCapacityRequest{
   string rideName = 1;
   int32 validDay = 2;
   int32 slotCapacity = 3;
+}
+
+message SlotCapacityResponse {
+  int32 acceptedAmount = 1;
+  int32 relocatedAmount = 2;
+  int32 cancelledAmount = 3;
 }

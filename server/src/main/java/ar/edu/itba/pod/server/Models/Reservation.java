@@ -2,6 +2,7 @@ package ar.edu.itba.pod.server.Models;
 
 import java.time.LocalTime;
 import java.util.UUID;
+import rideBooking.Models.ReservationState;
 
 public class Reservation {
     UUID visitorId;
@@ -30,5 +31,9 @@ public class Reservation {
 
     public LocalTime getTime() {
         return time;
+    }
+
+    public void setState(ReservationState state) {
+        this.state = state;
     }
 }

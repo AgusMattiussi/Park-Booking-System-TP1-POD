@@ -16,3 +16,13 @@ enum PassTypeEnum{
   // cantidad ilimitada de atracciones del parque para los slots que inicien antes de las 14:00
   HALF_DAY = 3;
 }
+
+
+enum ReservationState {
+  UNKNOWN_0 = 0;
+  CANCELLED=1;
+  PENDING=2;
+  PENDING_WAITING_ACCEPT=3;
+  ACCEPTED=4;
+  RELOCATED=5;
+}
