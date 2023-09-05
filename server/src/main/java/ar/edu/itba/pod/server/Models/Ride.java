@@ -16,8 +16,9 @@ public class Ride {
     private Integer slotCapacity;
 
     // <Date, <Slot Time, Capacity>>, ordered by date
-    private final Map<Integer,
-            Map<LocalTime, Integer>> slotsPerDay;
+    private final Map<Integer,Map<LocalTime, Integer>> slotsPerDay;
+
+    private final Map<Integer, List<Reservation>> reservationsPerDay;
 
     public Ride(String name, RideTime rideTime, Integer slotTime){
         this(getNextId(), name, rideTime, slotTime);
@@ -29,6 +30,7 @@ public class Ride {
         this.slotTime = slotTime;
         this.slotsPerDay = new TreeMap<>();
         this.slotCapacity = null;
+        this.reservationsPerDay = new TreeMap<>();
     }
 
     public String getName() {
@@ -53,6 +55,10 @@ public class Ride {
 
     public Integer getSlotCapacity() {
         return slotCapacity;
+    }
+
+    public Map<Integer, List<Reservation>> getReservationsPerDay() {
+        return reservationsPerDay;
     }
 
     private static synchronized int getNextId(){
