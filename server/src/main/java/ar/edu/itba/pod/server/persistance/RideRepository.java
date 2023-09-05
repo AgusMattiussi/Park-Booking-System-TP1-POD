@@ -95,14 +95,12 @@ public class RideRepository {
         if(capacity < 0){
             throw new SlotCapacityException("Slot capacity must be positive");
         }
-
-        Map<Integer, Map<Integer, List<Reservation>>> slotsPerDay = this.rides.get(rideName).getSlotsPerDay();
-        if (slotsPerDay.containsKey(day)){
+        Ride ride = this.rides.get(rideName);
+        if (ride.getSlotCapacity() != null){
 //            si ya se cargó una capacidad para esa atracción y día
             throw new SlotCapacityException("There already is a loaded capacity for ride " + rideName + " for day " + day);
         }
-        slotsPerDay.put(day, new TreeMap<>());
-        slotsPerDay.get(day).put(capacity, new ArrayList<>(capacity));
+        ride.setSlotCapacity(capacity);
 
 //        TODO: Esta carga confirmará, reubicará o cancelará las reservas con estado pendiente que ya se hayan realizado para esta atracción para el día indicado.
 

@@ -13,6 +13,7 @@ import rideBooking.QueryServiceOuterClass.CapacitySuggestionResponse;
 
 
 import java.sql.Time;
+import java.time.LocalTime;
 import java.util.*;
 
 public class QueryServer extends QueryServiceGrpc.QueryServiceImplBase{
@@ -34,11 +35,11 @@ public class QueryServer extends QueryServiceGrpc.QueryServiceImplBase{
 
         rides.values().forEach(ride -> {
             String rideName = ride.getName();
-            Map<Date, Map<Time,Integer>> slotsPerDay = ride.getSlotsPerDay();
+            Map<Integer, Map<LocalTime,Integer>> slotsPerDay = ride.getSlotsPerDay();
 
             // TODO: capacidad cargada => no se lista en la consulta
-            for (Map.Entry<Time, Integer> entry : slotsPerDay.get(request.getDayOfYear()).entrySet()) {
-                Time slot = entry.getKey();
+            for (Map.Entry<LocalTime, Integer> entry : slotsPerDay.get(request.getDayOfYear()).entrySet()) {
+                LocalTime slot = entry.getKey();
                 Integer capacity = entry.getValue();
                 logger.error(slot + " | " + capacity + " | " + rideName + "\n");
                 responseList.add(new CapacitySuggestion(rideName, capacity, slot.toString()));
