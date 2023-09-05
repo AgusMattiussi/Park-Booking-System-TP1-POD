@@ -84,7 +84,9 @@ public class QueryServer extends QueryServiceGrpc.QueryServiceImplBase{
             for (Map.Entry<LocalTime, List<Reservation>> entry : reservations.get(request.getDayOfYear().getValue()).entrySet()) {
                 LocalTime slot = entry.getKey();
                 for (Reservation reservation : entry.getValue()) {
-                    responseList.add(new ConfirmedBookings(rideName, reservation.getVisitorId().toString(), slot.toString()));
+                    if(reservation.getState() == ReservationState.ACCEPTED){
+                        responseList.add(new ConfirmedBookings(rideName, reservation.getVisitorId().toString(), slot.toString()));
+                    }
                 }
             }
         });
