@@ -18,7 +18,7 @@ public class Ride {
     // <Date, <Slot Time, Capacity>>, ordered by date
     private final Map<Integer,Map<LocalTime, Integer>> slotsPerDay;
 
-    private final Map<Integer, List<Reservation>> reservationsPerDay;
+    private final Map<Integer, Map<LocalTime, List<Reservation>>> reservationsPerDay;
 
     public Ride(String name, RideTime rideTime, Integer slotTime){
         this(getNextId(), name, rideTime, slotTime);
@@ -57,7 +57,7 @@ public class Ride {
         return slotCapacity;
     }
 
-    public Map<Integer, List<Reservation>> getReservationsPerDay() {
+    public Map<Integer, Map<LocalTime, List<Reservation>>> getReservationsPerDay() {
         return reservationsPerDay;
     }
 

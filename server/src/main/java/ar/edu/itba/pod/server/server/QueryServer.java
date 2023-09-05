@@ -1,8 +1,6 @@
 package ar.edu.itba.pod.server.server;
 
-import ar.edu.itba.pod.server.Models.CapacitySuggestion;
-import ar.edu.itba.pod.server.Models.ConfirmedBookings;
-import ar.edu.itba.pod.server.Models.Ride;
+import ar.edu.itba.pod.server.Models.*;
 import ar.edu.itba.pod.server.exceptions.InvalidTimeException;
 import ar.edu.itba.pod.server.persistance.RideRepository;
 import io.grpc.stub.StreamObserver;
@@ -36,15 +34,21 @@ public class QueryServer extends QueryServiceGrpc.QueryServiceImplBase{
         logger.error("Slot | Capacity | Ride\n");
 
         rides.values().forEach(ride -> {
-            String rideName = ride.getName();
-            Map<Integer, Map<LocalTime,Integer>> slotsPerDay = ride.getSlotsPerDay();
+            if(ride.getSlotCapacity() == null) {
+                String rideName = ride.getName();
 
-            // TODO: capacidad cargada => no se lista en la consulta
-            for (Map.Entry<LocalTime, Integer> entry : slotsPerDay.get(request.getDayOfYear()).entrySet()) {
-                LocalTime slot = entry.getKey();
-                Integer capacity = entry.getValue();
-                logger.error(slot + " | " + capacity + " | " + rideName + "\n");
-                responseList.add(new CapacitySuggestion(rideName, capacity, slot.toString()));
+                Map<Integer, Map<LocalTime, List<Reservation>>> reservations = ride.getReservationsPerDay();
+                int pendingBookings = 0;
+
+                for (Map.Entry<LocalTime, List<Reservation>> entry : reservations.get(request.getDayOfYear().getValue()).entrySet()) {
+                    LocalTime slot = entry.getKey();
+                    for (Reservation reservation : entry.getValue()) {
+                        if (reservation.getState() == ReservationState.PENDING) {
+                            pendingBookings++;
+                        }
+                    }
+                    responseList.add(new CapacitySuggestion(rideName, pendingBookings, slot.toString()));
+                }
             }
         });
 
@@ -74,12 +78,14 @@ public class QueryServer extends QueryServiceGrpc.QueryServiceImplBase{
 
         rides.values().forEach(ride -> {
             String rideName = ride.getName();
-            Map<Date, Map<Time,Integer>> slotsPerDay = ride.getSlotsPerDay();
 
-            for (Map.Entry<Time, Integer> entry : slotsPerDay.get(request.getDayOfYear()).entrySet()) {
-                Time slot = entry.getKey();
-                logger.error(slot + " | " + "Visitor UUID" + " | " + rideName + "\n");
-                responseList.add(new ConfirmedBookings(rideName, "visitorID", slot.toString()));
+            Map<Integer, Map<LocalTime, List<Reservation>>> reservations = ride.getReservationsPerDay();
+
+            for (Map.Entry<LocalTime, List<Reservation>> entry : reservations.get(request.getDayOfYear().getValue()).entrySet()) {
+                LocalTime slot = entry.getKey();
+                for (Reservation reservation : entry.getValue()) {
+                    responseList.add(new ConfirmedBookings(rideName, reservation.getVisitorId().toString(), slot.toString()));
+                }
             }
         });
 

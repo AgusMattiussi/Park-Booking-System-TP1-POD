@@ -6,9 +6,7 @@ import java.util.UUID;
 public class Reservation {
     UUID visitorId;
     ReservationState state;
-
     int day;
-
     LocalTime time;
 
     public Reservation(UUID visitorId, ReservationState state, int day, LocalTime time) {
@@ -16,5 +14,21 @@ public class Reservation {
         this.state = state;
         this.day = day;
         this.time = time;
+    }
+
+    public UUID getVisitorId() {
+        return visitorId;
+    }
+
+    public ReservationState getState() {
+        return state;
+    }
+
+    public int getDay() {
+        return day;
+    }
+
+    public LocalTime getTime() {
+        return time;
     }
 }
