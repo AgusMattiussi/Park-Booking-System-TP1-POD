@@ -21,11 +21,14 @@ public class RideRepository {
     // TODO: Considerar cual es el caso de uso mas comun para definir el mapeo
     /* Maps ride names to a set of <User ID, List of time slots reserved> */
     private final ConcurrentMap<String, ConcurrentMap<String, ConcurrentSkipListSet<LocalDateTime>>> bookedRides;
+    /* Maps visitor ID to ride notifications */
+    private final ConcurrentMap<UUID, ConcurrentMap<Integer, ConcurrentSkipListSet<String>>> notifications;
 
     private RideRepository() {
         this.rides = new ConcurrentHashMap<>();
         this.parkPasses = new ConcurrentHashMap<>();
         this.bookedRides = new ConcurrentHashMap<>();
+        this.notifications = new ConcurrentHashMap<>();
     }
 
     public static RideRepository getInstance() {
@@ -181,5 +184,32 @@ public class RideRepository {
         ConcurrentSkipListSet<LocalDateTime> visitorBookings = rideBookings.get(visitorId);
         return visitorBookings.add(time);
     }
+
+    public boolean addVisitor(UUID visitorId, String rideName, int day) {
+        /*
+        FAIL CONDITIONS:
+        - No ride under that name
+        - Invalid date
+        - Invalid pass
+        - Already registered for notification
+         */
+        if (!this.rides.containsKey(rideName))
+            throw new NotFoundRideException("This ride does not exist");
+
+        invalidDate(day);
+
+        if(!this.parkPasses.containsKey(visitorId) || !this.parkPasses.get(visitorId).containsKey(day)){
+            throw new NotFoundPassException("No valid pass for day " + day);
+        }
+
+        if(this.notifications.get(visitorId).get(day).contains(rideName)) {
+            throw new AlreadyExistsException("VisitorID already registered for ride " + rideName + " on day " + day);
+        }
+
+        notifications.putIfAbsent(visitorId, new ConcurrentHashMap<>());
+        notifications.get(visitorId).putIfAbsent(day, new ConcurrentSkipListSet<>());
+        return notifications.get(visitorId).get(day).add(rideName);
+    }
+
 
 }
