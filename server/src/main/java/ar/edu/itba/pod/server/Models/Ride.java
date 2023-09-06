@@ -1,11 +1,13 @@
 package ar.edu.itba.pod.server.Models;
 
 
-import java.sql.Time;
+import com.google.protobuf.StringValue;
+import rideBooking.RideBookingServiceOuterClass;
+
 import java.time.LocalTime;
 import java.util.*;
 
-public class Ride {
+public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.Ride>{
     private static int rideCount = 0; //FIXME: no se si es la mejor implementación pero bué
 
     private final String name;
@@ -75,4 +77,16 @@ public class Ride {
     public void setCancelledReservations(List<Reservation> cancelledReservations) {
         this.cancelledReservations = cancelledReservations;
     }
+
+    //TODO: Ver si esta es la unica implementacion posible (o si algun metodo necesita otra)
+    @Override
+    public RideBookingServiceOuterClass.Ride convertToGRPC() {
+        return RideBookingServiceOuterClass.Ride.newBuilder()
+                .setName(StringValue.of(this.name))
+                .setOpeningTime(StringValue.of(this.rideTime.getOpenTimeFormattedString()))
+                .setClosingTime(StringValue.of(this.rideTime.getCloseTimeFormattedString()))
+                .build();
+    }
+
+
 }

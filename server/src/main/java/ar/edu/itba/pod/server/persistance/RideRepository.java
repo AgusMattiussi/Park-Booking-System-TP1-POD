@@ -162,7 +162,11 @@ public class RideRepository {
     }
 
     public Map<String, Ride> getRides() {
-        return this.rides;
+        return rides;
+    }
+
+    public List<Ride> getRidesList() {
+        return new ArrayList<>(this.rides.values());
     }
 
     public boolean containsRide(String name) {

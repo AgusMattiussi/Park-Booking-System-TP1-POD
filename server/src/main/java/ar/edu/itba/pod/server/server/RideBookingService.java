@@ -1,5 +1,6 @@
 package ar.edu.itba.pod.server.server;
 
+import ar.edu.itba.pod.server.Models.Ride;
 import ar.edu.itba.pod.server.persistance.RideRepository;
 import com.google.protobuf.Empty;
 import com.google.protobuf.StringValue;
@@ -11,6 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
 import java.util.List;
 
 import rideBooking.RideBookingServiceGrpc;
@@ -23,8 +25,19 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
 
     @Override
     public void getRides(Empty request, StreamObserver<GetRideResponse> responseObserver) {
-        super.getRides(request, responseObserver);
+        //TODO: Cambiar getRides() a Collection?
+        Collection<Ride> rides = rideRepository.getRidesList();
+        GetRideResponse.Builder responseBuilder = GetRideResponse.newBuilder();
+
+        for (Ride ride : rides) {
+            responseBuilder.addRides(ride.convertToGRPC());
+        }
+
+        responseObserver.onNext(responseBuilder.build());
+        responseObserver.onCompleted();
     }
+
+
 
     @Override
     public void getRideAvailability(GetRideAvailabilityRequest request, StreamObserver<GetRideAvailabilityResponse> responseObserver) {

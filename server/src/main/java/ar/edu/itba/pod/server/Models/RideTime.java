@@ -2,8 +2,8 @@ package ar.edu.itba.pod.server.Models;
 
 import ar.edu.itba.pod.server.exceptions.InvalidTimeException;
 import rideBooking.Models;
-
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
 public class RideTime implements GRPCModel<Models.RideTime>{
 
@@ -32,11 +32,27 @@ public class RideTime implements GRPCModel<Models.RideTime>{
                 .build();
     }
 
-    public LocalTime  getOpen() {
+    public LocalTime getOpen() {
         return open;
+    }
+
+    /* Returns a LocalTime in a HH:mm formatted String */
+    private String localTimeToFormattedString(LocalTime time) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
+        return time.format(formatter);
+    }
+
+    /* Returns Open Time in HH:mm format */
+    public String getOpenTimeFormattedString() {
+        return localTimeToFormattedString(this.open);
     }
 
     public LocalTime  getClose() {
         return close;
+    }
+
+    /* Returns Close Time in HH:mm format */
+    public String getCloseTimeFormattedString() {
+        return localTimeToFormattedString(this.close);
     }
 }
