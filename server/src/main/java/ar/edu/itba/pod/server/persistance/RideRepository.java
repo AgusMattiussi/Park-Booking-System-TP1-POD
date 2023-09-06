@@ -202,13 +202,22 @@ public class RideRepository {
             throw new NotFoundPassException("No valid pass for day " + day);
         }
 
-        if(this.notifications.get(visitorId).get(day).contains(rideName)) {
-            throw new AlreadyExistsException("VisitorID already registered for ride " + rideName + " on day " + day);
-        }
-
         notifications.putIfAbsent(visitorId, new ConcurrentHashMap<>());
         notifications.get(visitorId).putIfAbsent(day, new ConcurrentSkipListSet<>());
         return notifications.get(visitorId).get(day).add(rideName);
+    }
+
+    public boolean removeVisitor(UUID visitorId, String rideName, int day) {
+        if(!this.notifications.containsKey(visitorId)) {
+            throw new NotFoundVisitorException("No user found for the visitorId " + visitorId);
+        }
+
+        if(this.notifications.get(visitorId).containsKey(day)) {
+            return this.notifications.get(visitorId).get(day).remove(rideName);
+        }
+        else {
+            return false;
+        }
     }
 
 
