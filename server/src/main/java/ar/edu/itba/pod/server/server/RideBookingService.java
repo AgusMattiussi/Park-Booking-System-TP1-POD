@@ -12,32 +12,14 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import rideBooking.RideBookingServiceOuterClass.BookRideRequest;
-import rideBooking.RideBookingServiceOuterClass.BookRideResponse;
-import rideBooking.RideBookingServiceOuterClass.BookRide;
-import rideBooking.RideBookingServiceOuterClass.GetRideResponse;
-import rideBooking.RideBookingServiceOuterClass.GetRideAvailabilityRequest;
-import rideBooking.RideBookingServiceOuterClass.GetRideAvailabilityResponse;
-public class RideBookingServer extends rideBooking.RideBookingServiceGrpc.RideBookingServiceImplBase {
+
+import rideBooking.RideBookingServiceGrpc;
+import rideBooking.RideBookingServiceOuterClass.*;
+
+public class RideBookingService extends RideBookingServiceGrpc.RideBookingServiceImplBase {
 
     private static Logger logger = LoggerFactory.getLogger(Server.class);
     private final RideRepository rideRepository = RideRepository.getInstance();
-
-//    public static void main(String[] args) throws InterruptedException, IOException, IOException {
-//        logger.info(" Server Starting ...");
-//
-//        int port = 50001;
-//        io.grpc.Server server = ServerBuilder.forPort(port)
-//                .build();
-//        server.start();
-//        logger.info("Server started, listening on " + port);
-//        server.awaitTermination();
-//        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-//            logger.info("Shutting down gRPC server since JVM is shutting down");
-//            server.shutdown();
-//            logger.info("Server shut down");
-//        }));
-//    }
 
     @Override
     public void getRides(Empty request, StreamObserver<GetRideResponse> responseObserver) {
