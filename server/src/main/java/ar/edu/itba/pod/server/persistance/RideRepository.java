@@ -296,14 +296,13 @@ public class RideRepository {
 
     private Optional<Reservation> getReservation(String rideName, int dayOfTheYear, LocalTime timeSlot, UUID visitorId){
         ConcurrentSkipListSet<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
-        if(reservations.isEmpty())
-            return Optional.empty();
+        if(!reservations.isEmpty()) {
+            Reservation toFind = new Reservation(visitorId, ReservationState.UNKNOWN_0, dayOfTheYear, timeSlot);
 
-        Reservation toFind = new Reservation(visitorId, ReservationState.UNKNOWN_0, dayOfTheYear, timeSlot);
-
-        for (Reservation r : reservations){
-            if(r.equals(toFind))
-                return Optional.of(r);
+            for (Reservation r : reservations) {
+                if (r.equals(toFind))
+                    return Optional.of(r);
+            }
         }
 
         return Optional.empty();
@@ -352,11 +351,15 @@ public class RideRepository {
      *
      */
     public void cancelBooking(String rideName, int dayOfTheYear, LocalTime timeSlot, UUID visitorId) {
-        Reservation reservation = getReservation(rideName, dayOfTheYear, timeSlot, visitorId).orElseThrow(() ->
-                new ReservationNotFoundException(String.format(
-                        "Reservation not found for visitor '%s' at ride '%s' at time slot '%s'", visitorId, rideName, timeSlot)));
+        Ride ride = getRide(rideName);
+        validateRideTimeAndAccess(ride, dayOfTheYear, timeSlot, visitorId);
 
-        reservation.cancel();
+        ConcurrentSkipListSet<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
+        Reservation toRemove = new Reservation(visitorId, ReservationState.UNKNOWN_0, dayOfTheYear, timeSlot);
+
+        if(!reservations.remove(toRemove))
+            throw new ReservationNotFoundException(String.format(
+                    "Reservation not found for visitor '%s' at ride '%s' at time slot '%s'", visitorId, rideName, timeSlot));
     }
 
     public boolean addVisitor(UUID visitorId, String rideName, int day) {
