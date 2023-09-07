@@ -42,6 +42,10 @@ public class Reservation implements Comparable<Reservation> {
         setState(ReservationState.ACCEPTED);
     }
 
+    public void relocate(){
+        setState(ReservationState.RELOCATED);
+    }
+
     public void cancel(){
         setState(ReservationState.CANCELLED);
     }

@@ -76,7 +76,11 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
     }
 
     public void setCancelledReservations(List<Reservation> cancelledReservations) {
-        this.cancelledReservations = cancelledReservations;
+        if(this.cancelledReservations.isEmpty()){
+            this.cancelledReservations = cancelledReservations;
+        }else{
+            this.cancelledReservations.addAll(cancelledReservations);
+        }
     }
 
     public boolean isSlotValid(int day, LocalTime time) {
