@@ -20,6 +20,7 @@ import java.util.UUID;
 import rideBooking.RideBookingServiceGrpc;
 import rideBooking.RideBookingServiceOuterClass.*;
 
+//TODO: Para no repetir codigo, podria cambiar los parametros de RideRepository para recibir Reservation y crearla afuera
 public class RideBookingService extends RideBookingServiceGrpc.RideBookingServiceImplBase {
 
     private final RideRepository rideRepository = RideRepository.getInstance();
@@ -85,7 +86,20 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
 
     @Override
     public void cancelBooking(BookRideRequest request, StreamObserver<BookRideResponse> responseObserver) {
-        super.cancelBooking(request, responseObserver);
+        LocalTime timeSlot;
+        try {
+            timeSlot = parseTime(request.getTimeSlot().getValue());
+        } catch (DateTimeParseException e) {
+            //TODO: Pensar que hacer en este caso. Quien maneja los throws?
+            return;
+        }
+
+        String rideName = request.getRideName().getValue();
+        int dayOfTheYear = Integer.parseInt(request.getDayOfYear().getValue());
+        UUID visitorId = UUID.fromString(request.getVisitorId().getValue());
+
+        //TODO: ver que onda throws
+        rideRepository.cancelBooking(rideName, dayOfTheYear, timeSlot, visitorId);
     }
 
     private LocalTime parseTime(String time) {

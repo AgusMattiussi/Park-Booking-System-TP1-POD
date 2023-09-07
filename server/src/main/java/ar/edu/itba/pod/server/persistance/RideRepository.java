@@ -256,15 +256,11 @@ public class RideRepository {
     }
 
     private Optional<Reservation> getReservation(String rideName, int dayOfTheYear, LocalTime timeSlot, UUID visitorId){
-        Ride ride = getRide(rideName);
-        validateRideTimeAndAccess(ride, dayOfTheYear, timeSlot, visitorId);
-
         ConcurrentSkipListSet<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
         if(reservations.isEmpty())
             return Optional.empty();
 
-        ReservationState state = ride.isSlotCapacitySet() ? ReservationState.PENDING : ReservationState.ACCEPTED;
-        Reservation toFind = new Reservation(visitorId, state, dayOfTheYear, timeSlot);
+        Reservation toFind = new Reservation(visitorId, ReservationState.UNKNOWN_0, dayOfTheYear, timeSlot);
 
         for (Reservation r : reservations){
             if(r.equals(toFind))
@@ -288,6 +284,12 @@ public class RideRepository {
      *
      */
     public void confirmBooking(String rideName, int dayOfTheYear, LocalTime timeSlot, UUID visitorId){
+        Ride ride = getRide(rideName);
+        validateRideTimeAndAccess(ride, dayOfTheYear, timeSlot, visitorId);
+
+        if(!ride.isSlotCapacitySet())
+            throw new SlotCapacityException(String.format("Slot capacity not set for ride '%s'", rideName));
+
         Reservation reservation = getReservation(rideName, dayOfTheYear, timeSlot, visitorId).orElseThrow(() ->
                 new ReservationNotFoundException(String.format(
                         "Reservation not found for visitor '%s' at ride '%s' at time slot '%s'", visitorId, rideName, timeSlot)));
@@ -297,6 +299,25 @@ public class RideRepository {
                     "Reservation for visitor '%s' at ride '%s' at time slot '%s' is already confirmed", visitorId, rideName, timeSlot));
 
         reservation.confirm();
+    }
+    
+    /*
+     *  Cancels a previously booked ride
+     *
+     *  FAIL CONDITIONS:
+     *  - Reservation does not exist
+     *  - Invalid pass
+     *  - No ride under that name
+     *  - Invalid date
+     *  - Invalid time slot
+     *
+     */
+    public void cancelBooking(String rideName, int dayOfTheYear, LocalTime timeSlot, UUID visitorId) {
+        Reservation reservation = getReservation(rideName, dayOfTheYear, timeSlot, visitorId).orElseThrow(() ->
+                new ReservationNotFoundException(String.format(
+                        "Reservation not found for visitor '%s' at ride '%s' at time slot '%s'", visitorId, rideName, timeSlot)));
+
+        reservation.cancel();
     }
 
     public boolean addVisitor(UUID visitorId, String rideName, int day) {
@@ -337,6 +358,7 @@ public class RideRepository {
             return false;
         }
     }
+
 
 
 }
