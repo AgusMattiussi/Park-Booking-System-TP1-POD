@@ -406,22 +406,49 @@ public class RideRepository {
     }
 
     /* Returns the availability for a ride in a given day and time slot */
-    public Map<String, RideAvailability> getRideAvailability(String rideName, LocalTime timeSlot, int day) {
+    private RideAvailability getRideAvailabilityForTimeSlot(String rideName, LocalTime timeSlot, int day) {
         Ride ride = getRide(rideName);
         // TODO: Extraer validacion al service?
         validateDay(day);
         validateRideTimeSlot(ride, day, timeSlot);
 
-        RideAvailability availability = new RideAvailability(timeSlot,
+        return new RideAvailability(timeSlot,
                 ride.getPendingCountForTimeSlot(day, timeSlot),
                 ride.getConfirmedCountForTimeSlot(day, timeSlot),
                 ride.getCapacityForTimeSlot(day, timeSlot));
+    }
 
-        Map<String, RideAvailability> rideAvailability = new HashMap<>();
-        rideAvailability.put(rideName, availability);
+    private Map<String, Map<LocalTime, RideAvailability>> getRideAvailability(String rideName, LocalTime startTimeSlot, LocalTime endTimeSlot, int day){
+        Map<String, Map<LocalTime, RideAvailability>> rideAvailability = new HashMap<>();
 
+        // TODO: Validar que los tiempos sean correctos (intervalos de 15 min)
+        // TODO: Extraer esta validacion?
+        if (startTimeSlot.isAfter(endTimeSlot)) {
+            throw new IllegalArgumentException("Start time slot must be before end time slot");
+        }
+
+        Map<LocalTime, RideAvailability> timeSlotAvailability = new HashMap<>();
+
+        LocalTime currentTimeSlot = startTimeSlot;
+        while (currentTimeSlot.isBefore(endTimeSlot.plusMinutes(15))) {
+            timeSlotAvailability.put(currentTimeSlot, getRideAvailabilityForTimeSlot(rideName, currentTimeSlot, day));
+
+            currentTimeSlot = currentTimeSlot.plusMinutes(15);
+        }
+
+        rideAvailability.put(rideName, timeSlotAvailability);
         return rideAvailability;
     }
+
+    public Map<String, Map<LocalTime, RideAvailability>> getRidesAvailability(String rideName, LocalTime timeSlot, int day){
+        return getRideAvailability(rideName, timeSlot, timeSlot, day);
+    }
+
+    public Map<String, Map<LocalTime, RideAvailability>> getRidesAvailability(String rideName, LocalTime startTimeSlot, LocalTime endTimeSlot, int day) {
+        return getRideAvailability(rideName, startTimeSlot, endTimeSlot, day);
+    }
+
+
 
 
 
