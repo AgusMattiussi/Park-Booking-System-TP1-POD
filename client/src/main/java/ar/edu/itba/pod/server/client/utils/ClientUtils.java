@@ -3,12 +3,16 @@ package ar.edu.itba.pod.server.client.utils;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 public final class ClientUtils {
-    public static ManagedChannel buildChannel(String serverAddress, int port){
-        return ManagedChannelBuilder.forAddress(serverAddress, port)
+    public static ManagedChannel buildChannel(String serverAddress){
+        return ManagedChannelBuilder.forTarget(serverAddress)
                 .usePlaintext()
                 .build();
     }
@@ -26,6 +30,16 @@ public final class ClientUtils {
 
     public static String getArgumentValue(Map<String, String> argMap, String key) {
         return argMap.get(key);
+    }
+
+    public static void createOutputFile(String outPath, String content) {
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(outPath));
+            writer.write(content);
+            writer.close();
+        } catch (IOException e) {
+            System.err.println("Error creating output file");
+        }
     }
 
 }
