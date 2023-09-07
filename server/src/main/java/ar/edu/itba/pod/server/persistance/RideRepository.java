@@ -418,9 +418,7 @@ public class RideRepository {
                 ride.getCapacityForTimeSlot(day, timeSlot));
     }
 
-    private Map<String, Map<LocalTime, RideAvailability>> getRideAvailability(String rideName, LocalTime startTimeSlot, LocalTime endTimeSlot, int day){
-        Map<String, Map<LocalTime, RideAvailability>> rideAvailability = new HashMap<>();
-
+    private Map<LocalTime, RideAvailability> getRideAvailability(String rideName, LocalTime startTimeSlot, LocalTime endTimeSlot, int day){
         // TODO: Validar que los tiempos sean correctos (intervalos de 15 min)
         // TODO: Extraer esta validacion?
         if (startTimeSlot.isAfter(endTimeSlot)) {
@@ -436,17 +434,30 @@ public class RideRepository {
             currentTimeSlot = currentTimeSlot.plusMinutes(15);
         }
 
-        rideAvailability.put(rideName, timeSlotAvailability);
-        return rideAvailability;
+        return timeSlotAvailability;
     }
 
     public Map<String, Map<LocalTime, RideAvailability>> getRidesAvailability(String rideName, LocalTime timeSlot, int day){
-        return getRideAvailability(rideName, timeSlot, timeSlot, day);
+        Map<String, Map<LocalTime, RideAvailability>> rideAvailability = new HashMap<>();
+        rideAvailability.put(rideName, getRideAvailability(rideName, timeSlot, timeSlot, day));
+        return rideAvailability;
     }
 
     public Map<String, Map<LocalTime, RideAvailability>> getRidesAvailability(String rideName, LocalTime startTimeSlot, LocalTime endTimeSlot, int day) {
-        return getRideAvailability(rideName, startTimeSlot, endTimeSlot, day);
+        Map<String, Map<LocalTime, RideAvailability>> rideAvailability = new HashMap<>();
+        rideAvailability.put(rideName, getRideAvailability(rideName, startTimeSlot, endTimeSlot, day));
+        return rideAvailability;
     }
+
+    public Map<String, Map<LocalTime, RideAvailability>> getRidesAvailability(LocalTime startTimeSlot, LocalTime endTimeSlot, int day) {
+        Map<String, Map<LocalTime, RideAvailability>> rideAvailability = new HashMap<>();
+
+        for (String rideName : rides.keySet())
+            rideAvailability.put(rideName, getRideAvailability(rideName, startTimeSlot, endTimeSlot, day));
+
+        return rideAvailability;
+    }
+
 
 
 
