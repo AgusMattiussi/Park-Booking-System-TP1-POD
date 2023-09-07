@@ -1,8 +1,10 @@
 package ar.edu.itba.pod.server.Models;
 
-import java.util.Iterator;
+import com.google.protobuf.Int32Value;
+import com.google.protobuf.StringValue;
+import rideBooking.QueryServiceOuterClass;
 
-public class CapacitySuggestion {
+public class CapacitySuggestion implements GRPCModel<QueryServiceOuterClass.CapacitySuggestion> {
     private final String rideName;
     private final int suggestedCapacity;
     private final String slot;
@@ -23,5 +25,14 @@ public class CapacitySuggestion {
 
     public String getSlot() {
         return slot;
+    }
+
+    @Override
+    public QueryServiceOuterClass.CapacitySuggestion convertToGRPC() {
+        return QueryServiceOuterClass.CapacitySuggestion.newBuilder()
+                .setRideName(StringValue.of(rideName))
+                .setSuggestedCapacity(Int32Value.of(suggestedCapacity))
+                .setSlot(StringValue.of(slot))
+                .build();
     }
 }
