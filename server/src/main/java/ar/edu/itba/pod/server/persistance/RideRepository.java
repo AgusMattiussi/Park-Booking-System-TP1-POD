@@ -300,7 +300,7 @@ public class RideRepository {
 
         reservation.confirm();
     }
-    
+
     /*
      *  Cancels a previously booked ride
      *

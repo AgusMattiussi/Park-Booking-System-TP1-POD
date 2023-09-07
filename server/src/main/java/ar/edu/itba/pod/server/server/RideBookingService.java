@@ -28,12 +28,9 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
     @Override
     public void getRides(Empty request, StreamObserver<GetRideResponse> responseObserver) {
         //TODO: Cambiar getRides() a Collection?
-        Collection<Ride> rides = rideRepository.getRidesList();
         GetRideResponse.Builder responseBuilder = GetRideResponse.newBuilder();
 
-        for (Ride ride : rides) {
-            responseBuilder.addRides(ride.convertToGRPC());
-        }
+        rideRepository.getRidesList().forEach(ride -> responseBuilder.addRides(ride.convertToGRPC()));
 
         responseObserver.onNext(responseBuilder.build());
         responseObserver.onCompleted();
