@@ -16,10 +16,10 @@ service RideBookingService {
   rpc bookRide(BookRideRequest) returns (BookRideResponse);
 
   // 4. Confirmar una reserva pendiente de una atracción a partir del nombre de la atracción , el día del año, el slot de la reserva (en formato HH:MM) y el id de visitante (en formato UUID)
-  rpc confirmBooking(BookRide) returns (BookRideResponse);
+  rpc confirmBooking(BookRideRequest) returns (BookRideResponse);
 
   // 5. Cancelar una reserva de una atracción a partir del nombre de la atracción, el día del año, el slot de la reserva (en formato HH:MM) y el id del visitante (en formato UUID)
-  rpc cancelBooking(BookRide) returns (BookRideResponse);
+  rpc cancelBooking(BookRideRequest) returns (BookRideResponse);
 
 }
 
@@ -47,10 +47,6 @@ message GetRideAvailabilityResponse {
 }
 
 message BookRideRequest {
-  repeated BookRide rides = 1;
-}
-
-message BookRide {
   google.protobuf.StringValue ride_name = 1;
   google.protobuf.StringValue day_of_year = 2;
   google.protobuf.StringValue time_slot = 3;

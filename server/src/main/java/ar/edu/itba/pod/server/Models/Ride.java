@@ -7,6 +7,7 @@ import rideBooking.RideBookingServiceOuterClass;
 import java.time.LocalTime;
 import java.util.*;
 
+//TODO: Cambiar las colecciones a su version concurrente
 public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.Ride>{
     private static int rideCount = 0; //FIXME: no se si es la mejor implementación pero bué
 
@@ -76,6 +77,14 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
 
     public void setCancelledReservations(List<Reservation> cancelledReservations) {
         this.cancelledReservations = cancelledReservations;
+    }
+
+    public boolean isSlotValid(int day, LocalTime time) {
+        return slotsPerDay.containsKey(day) && slotsPerDay.get(day).containsKey(time);
+    }
+
+    public boolean isSlotCapacitySet() {
+        return slotCapacity != null;
     }
 
     //TODO: Ver si esta es la unica implementacion posible (o si algun metodo necesita otra)
