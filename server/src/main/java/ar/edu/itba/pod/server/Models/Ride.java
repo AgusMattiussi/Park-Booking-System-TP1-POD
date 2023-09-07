@@ -1,6 +1,7 @@
 package ar.edu.itba.pod.server.Models;
 
 
+import ar.edu.itba.pod.server.exceptions.SlotCapacityException;
 import com.google.protobuf.StringValue;
 import rideBooking.RideBookingServiceOuterClass;
 
@@ -16,7 +17,7 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
 
     private final RideTime rideTime;
     private final int slotTime;
-    private Integer slotCapacity;
+    private Map<Integer, Integer> slotCapacityPerDay;
 
     // <Date, <Slot Time, Capacity>>, ordered by date
     private final Map<Integer,Map<LocalTime, Integer>> slotsPerDay;
@@ -34,7 +35,7 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
         this.rideTime = rideTime;
         this.slotTime = slotTime;
         this.slotsPerDay = new TreeMap<>();
-        this.slotCapacity = null;
+        this.slotCapacityPerDay = new TreeMap<>();
         this.reservationsPerDay = new TreeMap<>();
         this.cancelledReservations = new ArrayList<>();
     }
@@ -59,8 +60,8 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
         return id;
     }
 
-    public Integer getSlotCapacity() {
-        return slotCapacity;
+    public Integer getSlotCapacityPerDay(Integer day) {
+        return slotCapacityPerDay.get(day);
     }
 
     public Map<Integer, Map<LocalTime, List<Reservation>>> getReservationsPerDay() {
@@ -71,8 +72,12 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
         return rideCount++;
     }
 
-    public void setSlotCapacity(Integer slotCapacity) {
-        this.slotCapacity = slotCapacity;
+    public void setSlotCapacityPerDay(Integer day, Integer slotCapacity) {
+        if (isSlotCapacitySet(day)){
+            throw new SlotCapacityException("Capacity is already setted for day " + day + " in ride " + this.name);
+        }else {
+            slotCapacityPerDay.put(day, slotCapacity);
+        }
     }
 
     public void setCancelledReservations(List<Reservation> cancelledReservations) {
@@ -87,8 +92,8 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
         return slotsPerDay.containsKey(day) && slotsPerDay.get(day).containsKey(time);
     }
 
-    public boolean isSlotCapacitySet() {
-        return slotCapacity != null;
+    public boolean isSlotCapacitySet(Integer day) {
+        return slotCapacityPerDay.containsKey(day);
     }
 
     //TODO: Ver si esta es la unica implementacion posible (o si algun metodo necesita otra)

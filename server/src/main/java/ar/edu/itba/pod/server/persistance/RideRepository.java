@@ -38,24 +38,30 @@ public class RideRepository {
         return instance;
     }
 
-    public Optional<Ride> addRide(String name, RideTime rideTime, int slotTime) {
-        Ride ride = new Ride(name, rideTime, slotTime);
-//        Falla:
-//        si existe una atracción con ese nombre
-        if (this.rides.containsKey(name)){
-            throw new AlreadyExistsException("Already exist a ride called " + name);
-        }
-//        si los valores de los horarios son inválidos
-        if(rideTime.getClose().isBefore(rideTime.getOpen())){
-            throw new InvalidTimeException("Closed ride time must be after open ride time");
-        }
-//        si con los valores provistos no existe un slot posible.
-        long minutes = rideTime.getClose().until(ride.getRideTime().getOpen(), ChronoUnit.MINUTES) / slotTime;
+    private void checkValidSlot(RideTime rideTime, int slotTime){
+        long minutes = rideTime.getClose().until(rideTime.getOpen(), ChronoUnit.MINUTES) / slotTime;
         if(minutes == Math.floor(minutes)){
             throw new SlotCapacityException("Slot is not possible, between " + rideTime.getOpen() + " and " + rideTime.getClose());
         }
-        this.rides.put(ride.getName(), ride);
-        return Optional.of(ride);
+    }
+
+    private void checkRideName(String rideName){
+        if (rideExists(rideName)){
+            throw new AlreadyExistsException("Already exist a ride called " + rideName);
+        }
+    }
+
+    private void checkPassExistance(UUID visitorId, int day){
+        if(this.parkPasses.get(visitorId).containsKey(day)){
+//              si ya existe un pase para el visitante para el día indicado
+            throw new AlreadyExistsException("There already exist a parkPass for the visitor for the day " + day);
+        }
+    }
+
+
+    //    Si el pase es halfDay y quiero reservas desp de las 14hs
+    private boolean checkHalfDayPass(LocalTime reservationTime){
+        return !reservationTime.isAfter(LocalTime.parse("14:00"));
     }
 
     private void invalidDate(int day){
@@ -63,19 +69,54 @@ public class RideRepository {
             throw new InvalidTimeException("The day must be between 1 and 365");
         }
     }
+
+    private void invalidTime(LocalTime before, LocalTime after){
+        if(after.isBefore(before)){
+            throw new InvalidTimeException(after + " ride time must be after "+ before + " ride time");
+        }
+    }
+
+
+    private void invalidPass(Models.PassTypeEnum passTypeEnum){
+        if (passTypeEnum.equals(Models.PassTypeEnum.UNKNOWN)){
+            throw new InvalidPassTypeException("There are 3 valid pass types [UNLIMITED, THREE, HALF_DAY]");
+        }
+    }
+
+    private void invalidRideName(String rideName){
+        if(!rideExists(rideName)){
+            throw new RideNotFoundException("There is no ride called " + rideName);
+        }
+    }
+
+    private void invalidCapacity(int capacity) {
+        if(capacity < 0){
+            throw new SlotCapacityException("Slot capacity must be positive");
+        }
+    }
+
+    public Optional<Ride> addRide(String name, RideTime rideTime, int slotTime) {
+        Ride ride = new Ride(name, rideTime, slotTime);
+//        Falla:
+//        si existe una atracción con ese nombre
+        checkRideName(name);
+//        si los valores de los horarios son inválidos
+        invalidTime(rideTime.getOpen(), rideTime.getClose());
+//        si con los valores provistos no existe un slot posible.
+        checkValidSlot(rideTime, slotTime);
+        this.rides.put(ride.getName(), ride);
+        return Optional.of(ride);
+    }
+
     public Optional<ParkPass> addParkPass(UUID visitorId, Models.PassTypeEnum type, int day) {
 //        Falla:
 //        si el tipo de pase es inválido
-        if (type.equals(Models.PassTypeEnum.UNKNOWN)){
-            throw new InvalidPassTypeException("There are 3 valid pass types [UNLIMITED, THREE, HALF_DAY]");
-        }
+        invalidPass(type);
 //        si el día del año es inválido.
         invalidDate(day);
         if(this.parkPasses.containsKey(visitorId)){
-            if(this.parkPasses.get(visitorId).containsKey(day)){
-//              si ya existe un pase para el visitante para el día indicado
-                throw new AlreadyExistsException("There already exist a parkPass for the visitor for the day " + day);
-            }
+//          si ya tiene un pase para ese dia
+            checkPassExistance(visitorId, day);
         }else{
             this.parkPasses.put(visitorId, new ConcurrentHashMap<>());
         }
@@ -87,26 +128,17 @@ public class RideRepository {
     private void addSlotsExceptions(String rideName, int day, int capacity){
 //        Falla:
 //        si la atracción no existe
-        if(!this.rides.containsKey(rideName)){
-            throw new RideNotFoundException("There is no ride called " + rideName);
-        }
+        invalidRideName(rideName);
 //        si el día es inválido
         invalidDate(day);
 //        si la capacidad es negativa
-        if(capacity < 0){
-            throw new SlotCapacityException("Slot capacity must be positive");
-        }
+        invalidCapacity(capacity);
+
         Ride ride = this.rides.get(rideName);
-        if (ride.getSlotCapacity() != null){
-//            si ya se cargó una capacidad para esa atracción y día
-            throw new SlotCapacityException("There already is a loaded capacity for ride " + rideName + " for day " + day);
-        }
+//        si ya tiene una capacidad asignada falla, sino la agrega
+        ride.setSlotCapacityPerDay(day, capacity);
     }
 
-//    Si el pase es halfDay y quiero reservas desp de las 14hs
-    private boolean checkHalfDayPass(LocalTime reservationTime){
-        return !reservationTime.isAfter(LocalTime.parse("14:00"));
-    }
 //    True si puedo seguir reservando, false si no puedo
 //    Chequeo si es half day que la reserva sea antes de las 14hs
 //    y si es three que no tenga 3 o mas ya hechas
@@ -127,7 +159,6 @@ public class RideRepository {
     public AdminParkServiceOuterClass.SlotCapacityResponse addSlotsPerDay(String rideName, int day, int capacity){
         addSlotsExceptions(rideName, day, capacity);
         Ride ride = this.rides.get(rideName);
-        ride.setSlotCapacity(capacity);
 
         Map<Integer, Map<LocalTime, List<Reservation>>> reservationsPerDay = ride.getReservationsPerDay();
         List<Reservation> cancelledReservations = new ArrayList<>();
@@ -253,7 +284,7 @@ public class RideRepository {
         
         ConcurrentSkipListSet<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
 
-        ReservationState state = ride.isSlotCapacitySet() ? ReservationState.PENDING : ReservationState.ACCEPTED;
+        ReservationState state = ride.isSlotCapacitySet(dayOfTheYear) ? ReservationState.PENDING : ReservationState.ACCEPTED;
         Reservation reservation = new Reservation(visitorId, state, dayOfTheYear, timeSlot);
 
         if(reservations.contains(reservation))
@@ -295,7 +326,7 @@ public class RideRepository {
         Ride ride = getRide(rideName);
         validateRideTimeAndAccess(ride, dayOfTheYear, timeSlot, visitorId);
 
-        if(!ride.isSlotCapacitySet())
+        if(!ride.isSlotCapacitySet(dayOfTheYear))
             throw new SlotCapacityException(String.format("Slot capacity not set for ride '%s'", rideName));
 
         Reservation reservation = getReservation(rideName, dayOfTheYear, timeSlot, visitorId).orElseThrow(() ->
