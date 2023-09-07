@@ -34,7 +34,8 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
         List<CapacitySuggestion> responseList = new LinkedList<>();
 
         rides.values().forEach(ride -> {
-            if(ride.getSlotCapacity() == null) {
+            //TODO: ride.getSlotCapacity() == null
+            if(true) {
                 String rideName = ride.getName();
 
                 Map<Integer, Map<LocalTime, List<Reservation>>> reservations = ride.getReservationsPerDay();

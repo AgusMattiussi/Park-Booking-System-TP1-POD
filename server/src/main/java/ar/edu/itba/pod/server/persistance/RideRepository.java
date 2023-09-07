@@ -64,7 +64,7 @@ public class RideRepository {
         return !reservationTime.isAfter(LocalTime.parse("14:00"));
     }
 
-    private void invalidDate(int day){
+    private void validateDay(int day){
         if (day > 365 || day < 1){
             throw new InvalidTimeException("The day must be between 1 and 365");
         }
@@ -113,7 +113,7 @@ public class RideRepository {
 //        si el tipo de pase es inválido
         invalidPass(type);
 //        si el día del año es inválido.
-        invalidDate(day);
+        validateDay(day);
         if(this.parkPasses.containsKey(visitorId)){
 //          si ya tiene un pase para ese dia
             checkPassExistance(visitorId, day);
@@ -130,7 +130,7 @@ public class RideRepository {
 //        si la atracción no existe
         invalidRideName(rideName);
 //        si el día es inválido
-        invalidDate(day);
+        validateDay(day);
 //        si la capacidad es negativa
         invalidCapacity(capacity);
 
@@ -230,9 +230,13 @@ public class RideRepository {
         return rides.get(name);
     }
 
-    private void validateRideTimeAndAccess(Ride ride, int dayOfTheYear, LocalTime timeSlot, UUID visitorId){
+    private void validateRideTimeSlot(Ride ride, int dayOfTheYear, LocalTime timeSlot){
         if(!ride.isSlotValid(dayOfTheYear, timeSlot))
             throw new InvalidTimeException(String.format("Time slot '%s' is invalid for ride '%s'", timeSlot, ride.getName()));
+    }
+
+    private void validateRideTimeAndAccess(Ride ride, int dayOfTheYear, LocalTime timeSlot, UUID visitorId){
+        validateRideTimeSlot(ride, dayOfTheYear, timeSlot);
 
         if(!hasValidPass(visitorId, dayOfTheYear))
             throw new PassNotFoundException(String.format("No valid pass for day %s", dayOfTheYear));
@@ -373,7 +377,7 @@ public class RideRepository {
         if (!rideExists(rideName))
             throw new RideNotFoundException("This ride does not exist");
 
-        invalidDate(day);
+        validateDay(day);
 
         if(!hasValidPass(visitorId, day))
             throw new PassNotFoundException("No valid pass for day " + day);
@@ -399,6 +403,24 @@ public class RideRepository {
         else {
             return false;
         }
+    }
+
+    /* Returns the availability for a ride in a given day and time slot */
+    public Map<String, RideAvailability> getRideAvailability(String rideName, LocalTime timeSlot, int day) {
+        Ride ride = getRide(rideName);
+        // TODO: Extraer validacion al service?
+        validateDay(day);
+        validateRideTimeSlot(ride, day, timeSlot);
+
+        RideAvailability availability = new RideAvailability(timeSlot,
+                ride.getPendingCountForTimeSlot(day, timeSlot),
+                ride.getConfirmedCountForTimeSlot(day, timeSlot),
+                ride.getCapacityForTimeSlot(day, timeSlot));
+
+        Map<String, RideAvailability> rideAvailability = new HashMap<>();
+        rideAvailability.put(rideName, availability);
+
+        return rideAvailability;
     }
 
 

@@ -36,13 +36,40 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
         responseObserver.onCompleted();
     }
 
-
-
+    // TODO: Falta response
     @Override
     public void getRideAvailability(GetRideAvailabilityRequest request, StreamObserver<GetRideAvailabilityResponse> responseObserver) {
-        super.getRideAvailability(request, responseObserver);
+        LocalTime startTimeSlot, endTimeSlot;
+        String rideName;
+        int dayOfTheYear;
+
+
+        try {
+            startTimeSlot = parseTime(request.getStartTimeSlot().getValue());
+        } catch (DateTimeParseException e) {
+            //TODO: Pensar que hacer en este caso. Quien maneja los throws?
+            return;
+
+        }
+
+        if(request.hasEndTimeSlot()) {
+            try {
+                endTimeSlot = parseTime(request.getEndTimeSlot().getValue());
+            } catch (DateTimeParseException e) {
+                //TODO: Pensar que hacer en este caso. Quien maneja los throws?
+                return;
+            }
+        }
+
+        if(request.hasRideName())
+            rideName = request.getRideName().getValue();
+
+        dayOfTheYear = Integer.parseInt(request.getDayOfYear().getValue());
+
+
     }
 
+    // TODO: Falta response
     @Override
     public void bookRide(BookRideRequest request, StreamObserver<BookRideResponse> responseObserver) {
         //TODO: Validar parametros de entrada?
@@ -63,6 +90,7 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
         rideRepository.bookRide(rideName, dayOfTheYear, timeSlot, visitorId);
     }
 
+    // TODO: Falta response
     @Override
     public void confirmBooking(BookRideRequest request, StreamObserver<BookRideResponse> responseObserver) {
         LocalTime timeSlot;
@@ -81,6 +109,7 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
         rideRepository.confirmBooking(rideName, dayOfTheYear, timeSlot, visitorId);
     }
 
+    // TODO: Falta response
     @Override
     public void cancelBooking(BookRideRequest request, StreamObserver<BookRideResponse> responseObserver) {
         LocalTime timeSlot;

@@ -36,14 +36,24 @@ message Ride {
 message GetRideAvailabilityRequest {
   google.protobuf.StringValue day_of_year = 1;
   optional google.protobuf.StringValue ride_name = 2;
-  optional google.protobuf.StringValue start_slot_time = 3;
-  optional google.protobuf.StringValue end_slot_time = 4;
+  google.protobuf.StringValue start_time_slot = 3;
+  optional google.protobuf.StringValue end_time_slot = 4;
 }
 
 message GetRideAvailabilityResponse {
-  google.protobuf.Int32Value confirmed_bookings = 1;
-  google.protobuf.Int32Value pending_bookings = 2;
-  optional google.protobuf.Int32Value ride_capacity = 3;
+  repeated RideAvailability ride_availability = 1;
+}
+
+message RideAvailability {
+  google.protobuf.StringValue ride_name = 1;
+  repeated TimeSlotAvailability time_slot_availability = 2;
+}
+
+message TimeSlotAvailability {
+  google.protobuf.StringValue time_slot = 1;
+  google.protobuf.Int32Value confirmed_bookings = 2;
+  google.protobuf.Int32Value pending_bookings = 3;
+  optional google.protobuf.Int32Value ride_capacity = 4;
 }
 
 message BookRideRequest {

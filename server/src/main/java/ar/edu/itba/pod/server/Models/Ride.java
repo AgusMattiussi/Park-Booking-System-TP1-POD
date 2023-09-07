@@ -4,6 +4,8 @@ package ar.edu.itba.pod.server.Models;
 import ar.edu.itba.pod.server.exceptions.SlotCapacityException;
 import com.google.protobuf.StringValue;
 import rideBooking.RideBookingServiceOuterClass;
+import rideBooking.Models.ReservationState;
+
 
 import java.time.LocalTime;
 import java.util.*;
@@ -66,6 +68,32 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
 
     public Map<Integer, Map<LocalTime, List<Reservation>>> getReservationsPerDay() {
         return reservationsPerDay;
+    }
+
+    private Optional<List<Reservation>> getReservationsForTimeSlot(int day, LocalTime timeSlot) {
+        if (reservationsPerDay.containsKey(day) && reservationsPerDay.get(day).containsKey(timeSlot))
+            return Optional.of(reservationsPerDay.get(day).get(timeSlot));
+        return Optional.empty();
+    }
+
+    public int getCapacityForTimeSlot(int day, LocalTime timeSlot) {
+        if (slotsPerDay.containsKey(day) && slotsPerDay.get(day).containsKey(timeSlot))
+            return slotsPerDay.get(day).get(timeSlot);
+        return 0;
+    }
+
+    private int countStateForTimeSlot(int day, LocalTime timeSlot, ReservationState state) {
+        Optional<List<Reservation>> reservations = getReservationsForTimeSlot(day, timeSlot);
+        return reservations.map(reservationList -> (int) reservationList.stream().filter(
+                        reservation -> reservation.getState() == state).count())
+                .orElse(0);
+    }
+    public int getConfirmedCountForTimeSlot(int day, LocalTime timeSlot) {
+        return countStateForTimeSlot(day, timeSlot, ReservationState.ACCEPTED);
+    }
+
+    public int getPendingCountForTimeSlot(int day, LocalTime timeSlot) {
+        return countStateForTimeSlot(day, timeSlot, ReservationState.PENDING);
     }
 
     private static synchronized int getNextId(){
