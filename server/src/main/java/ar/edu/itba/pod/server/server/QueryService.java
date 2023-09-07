@@ -15,7 +15,7 @@ import rideBooking.Models.ReservationState;
 import java.time.LocalTime;
 import java.util.*;
 
-public class QueryServer extends QueryServiceGrpc.QueryServiceImplBase{
+public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
 
     private final static Logger logger = LoggerFactory.getLogger(AdminParkServer.class);
     private static final RideRepository repository = RideRepository.getInstance();
@@ -26,11 +26,12 @@ public class QueryServer extends QueryServiceGrpc.QueryServiceImplBase{
             throw new InvalidTimeException("Invalid day of year");
         }
 
-        Map<String, Ride> rides = repository.getRides();
-        List<CapacitySuggestion> responseList = new LinkedList<>();
-
         logger.error("Capacity Suggestion Query\n");
         logger.error("Slot | Capacity | Ride\n");
+
+        // TODO: pasar esta logica a RideRepository?
+        Map<String, Ride> rides = repository.getRides();
+        List<CapacitySuggestion> responseList = new LinkedList<>();
 
         rides.values().forEach(ride -> {
             if(ride.getSlotCapacity() == null) {
@@ -50,13 +51,15 @@ public class QueryServer extends QueryServiceGrpc.QueryServiceImplBase{
                 }
             }
         });
-
         responseList.sort(Comparator.comparingInt(CapacitySuggestion::getSuggestedCapacity).reversed());
 
-        CapacitySuggestionResponse response = CapacitySuggestionResponse.newBuilder()
-                // TODO: iterable?
-//                .addAllCapacitySuggestions(responseList)
-                .build();
+        CapacitySuggestionResponse.Builder responseBuilder = CapacitySuggestionResponse.newBuilder();
+
+        responseList.forEach(capacitySuggestion -> {
+            responseBuilder.addCapacitySuggestions(capacitySuggestion.convertToGRPC());
+        });
+
+        CapacitySuggestionResponse response = responseBuilder.build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
@@ -67,13 +70,12 @@ public class QueryServer extends QueryServiceGrpc.QueryServiceImplBase{
             throw new InvalidTimeException("Invalid day of year");
         }
 
-//        ConcurrentMap<String, ConcurrentMap<String, ConcurrentSkipListSet<LocalDateTime>>> bookedRides = repository.getBookedRides();
-        // TODO: revisar estructura de estado
-        Map<String, Ride> rides = repository.getRides();
-        List<ConfirmedBookings> responseList = new LinkedList<>();
-
         logger.error("Confirmed Bookings Query\n");
         logger.error("Slot | Visitor | Ride\n");
+
+        // TODO: pasar esta logica a RideRepository?
+        Map<String, Ride> rides = repository.getRides();
+        List<ConfirmedBookings> responseList = new LinkedList<>();
 
         rides.values().forEach(ride -> {
             String rideName = ride.getName();
@@ -92,10 +94,14 @@ public class QueryServer extends QueryServiceGrpc.QueryServiceImplBase{
 
         responseList.sort(Comparator.comparing(ConfirmedBookings::getSlot));
 
-        ConfirmedBookingsResponse response = ConfirmedBookingsResponse.newBuilder()
-                // TODO: iterable?
-//                .addAllCapacitySuggestions(responseList)
-                .build();
+        ConfirmedBookingsResponse.Builder responseBuilder = ConfirmedBookingsResponse.newBuilder();
+
+        responseList.forEach(confirmedBookings -> {
+            responseBuilder.addConfirmedBookings(confirmedBookings.convertToGRPC());
+        });
+
+        ConfirmedBookingsResponse response = responseBuilder.build();
+
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }

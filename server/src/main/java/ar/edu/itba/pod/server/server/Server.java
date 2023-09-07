@@ -23,7 +23,7 @@ public class Server {
         int port = 50051;
         io.grpc.Server server = ServerBuilder.forPort(port)
                 .addService(handledService.apply(new RideBookingService()))
-                .addService(handledService.apply(new QueryServer()))
+                .addService(handledService.apply(new QueryService()))
                 .addService(handledService.apply(new NotifyServer()))
                 .addService(handledService.apply(new AdminParkServer()))
                 .build();
