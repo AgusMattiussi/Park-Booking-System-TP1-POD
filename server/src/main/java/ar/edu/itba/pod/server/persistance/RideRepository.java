@@ -5,7 +5,7 @@ import ar.edu.itba.pod.server.exceptions.*;
 import rideBooking.AdminParkServiceOuterClass;
 import rideBooking.Models;
 import rideBooking.Models.ReservationState;
-import java.time.LocalDateTime;
+
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -19,8 +19,8 @@ public class RideRepository {
     private final ConcurrentMap<String, Ride> rides;
     private final ConcurrentMap<UUID, ConcurrentMap<Integer,ParkPass>> parkPasses;
     // TODO: Considerar cual es el caso de uso mas comun para definir el mapeo
-    /* Maps ride names to a set of <User ID, List of time slots reserved> */
-    private final ConcurrentMap<String, ConcurrentMap<String, ConcurrentSkipListSet<LocalDateTime>>> bookedRides;
+    /* Maps ride names to a map of <User ID, List of reservations> */
+    private final ConcurrentMap<String, ConcurrentMap<UUID, ConcurrentMap<Integer, ConcurrentSkipListSet<Reservation>>>> bookedRides;
     /* Maps visitor ID to ride notifications */
     private final ConcurrentMap<UUID, ConcurrentMap<Integer, ConcurrentSkipListSet<String>>> notifications;
 
@@ -88,7 +88,7 @@ public class RideRepository {
 //        Falla:
 //        si la atracción no existe
         if(!this.rides.containsKey(rideName)){
-            throw new NotFoundRideException("There is no ride called " + rideName);
+            throw new RideNotFoundException("There is no ride called " + rideName);
         }
 //        si el día es inválido
         invalidDate(day);
@@ -196,7 +196,7 @@ public class RideRepository {
         return new ArrayList<>(this.rides.values());
     }
 
-    public boolean containsRide(String name) {
+    public boolean rideExists(String name) {
         return this.rides.containsKey(name);
     }
 
@@ -204,16 +204,50 @@ public class RideRepository {
         return this.rides.remove(name) != null;
     }
 
-    public boolean bookRide(String rideName, String visitorId, LocalDateTime time) {
-        if (!this.bookedRides.containsKey(rideName))
-            this.bookedRides.put(rideName, new ConcurrentHashMap<>());
+    /*
+     *  Books a ride for a visitor
+     *
+     *  FAIL CONDITIONS:
+     *  - Reservation already exists
+     *  - Invalid pass
+     *  - No ride under that name
+     *  - Invalid date
+     *  - Invalid time slot
+     *
+     */
+    // TODO: Mover excepciones al Service?
+    public boolean bookRide(String rideName, int dayOfTheYear, LocalTime timeSlot, UUID visitorId) {
+        
+        if(!rideExists(rideName))
+            throw new RideNotFoundException(String.format("Ride '%s' does not exist", rideName));
 
-        ConcurrentMap<String, ConcurrentSkipListSet<LocalDateTime>> rideBookings = this.bookedRides.get(rideName);
-        if (!rideBookings.containsKey(visitorId))
-            rideBookings.put(visitorId, new ConcurrentSkipListSet<>());
+        Ride ride = rides.get(rideName);
 
-        ConcurrentSkipListSet<LocalDateTime> visitorBookings = rideBookings.get(visitorId);
-        return visitorBookings.add(time);
+        if(!ride.isSlotValid(dayOfTheYear, timeSlot))
+            throw new InvalidTimeException(String.format("Time slot '%s' is invalid for ride '%s'", timeSlot, rideName));
+
+        if(!hasValidPass(visitorId, dayOfTheYear))
+            throw new PassNotFoundException(String.format("No valid pass for day %s", dayOfTheYear));
+
+        if (!bookedRides.containsKey(rideName))
+            bookedRides.put(rideName, new ConcurrentHashMap<>());
+
+        Map<UUID, ConcurrentMap<Integer, ConcurrentSkipListSet<Reservation>>> rideBookedSlotsByUser = bookedRides.get(rideName);
+        rideBookedSlotsByUser.putIfAbsent(visitorId, new ConcurrentHashMap<>());
+
+        ConcurrentMap<Integer, ConcurrentSkipListSet<Reservation>> userBookedSlotsByDay = rideBookedSlotsByUser.get(visitorId);
+        userBookedSlotsByDay.putIfAbsent(dayOfTheYear, new ConcurrentSkipListSet<>());
+        ConcurrentSkipListSet<Reservation> reservationSet = userBookedSlotsByDay.get(dayOfTheYear);
+
+
+        ReservationState state = ride.isSlotCapacitySet() ? ReservationState.PENDING : ReservationState.ACCEPTED;
+        Reservation reservation = new Reservation(visitorId, state, dayOfTheYear, timeSlot);
+
+        if(reservationSet.contains(reservation))
+            throw new AlreadyExistsException(String.format("Visitor '%s' already booked a ticket for '%s' at time slot '%s'", visitorId, rideName, timeSlot));
+
+        //TODO: Podria hacer 'putIfAbsent' y chequear por false afuera
+        return reservationSet.add(reservation);
     }
 
     public boolean addVisitor(UUID visitorId, String rideName, int day) {
@@ -224,23 +258,27 @@ public class RideRepository {
         - Invalid pass
         - Already registered for notification
          */
-        if (!this.rides.containsKey(rideName))
-            throw new NotFoundRideException("This ride does not exist");
+        if (!rideExists(rideName))
+            throw new RideNotFoundException("This ride does not exist");
 
         invalidDate(day);
 
-        if(!this.parkPasses.containsKey(visitorId) || !this.parkPasses.get(visitorId).containsKey(day)){
-            throw new NotFoundPassException("No valid pass for day " + day);
-        }
+        if(!hasValidPass(visitorId, day))
+            throw new PassNotFoundException("No valid pass for day " + day);
+
 
         notifications.putIfAbsent(visitorId, new ConcurrentHashMap<>());
         notifications.get(visitorId).putIfAbsent(day, new ConcurrentSkipListSet<>());
         return notifications.get(visitorId).get(day).add(rideName);
     }
 
+    private boolean hasValidPass(UUID visitorId, int day) {
+        return this.parkPasses.containsKey(visitorId) && this.parkPasses.get(visitorId).containsKey(day);
+    }
+
     public boolean removeVisitor(UUID visitorId, String rideName, int day) {
         if(!this.notifications.containsKey(visitorId)) {
-            throw new NotFoundVisitorException("No user found for the visitorId " + visitorId);
+            throw new VisitorNotFoundException("No user found for the visitorId " + visitorId);
         }
 
         if(this.notifications.get(visitorId).containsKey(day)) {

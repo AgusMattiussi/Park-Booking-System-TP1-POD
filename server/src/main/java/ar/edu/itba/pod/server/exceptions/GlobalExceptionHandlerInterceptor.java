@@ -42,8 +42,8 @@ public class GlobalExceptionHandlerInterceptor implements ServerInterceptor {
         private final Map<Class<? extends Throwable>, Code> errorCodesByException = Map.of(
                 ExecutionControl.NotImplementedException.class, Code.UNIMPLEMENTED,
                 AlreadyExistsException.class, Code.ALREADY_EXISTS,
-                NotFoundRideException.class, Code.NOT_FOUND,
-                NotFoundSlotException.class, Code.NOT_FOUND,
+                RideNotFoundException.class, Code.NOT_FOUND,
+                SlotNotFoundException.class, Code.NOT_FOUND,
                 InvalidPassTypeException.class, Code.INVALID_ARGUMENT,
                 SlotCapacityException.class, Code.INVALID_ARGUMENT,
                 InvalidTimeException.class, Code.CANCELLED,
