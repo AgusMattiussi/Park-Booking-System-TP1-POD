@@ -184,8 +184,19 @@ public class RideRepository {
                 .build();
         return response;
     }
-    public Ride getRide(String name) {
-        return this.rides.get(name);
+    private Ride getRide(String name) {
+        if(!rideExists(name))
+            throw new RideNotFoundException(String.format("Ride '%s' does not exist", name));
+
+        return rides.get(name);
+    }
+
+    private void validateRideTimeAndAccess(Ride ride, int dayOfTheYear, LocalTime timeSlot, UUID visitorId){
+        if(!ride.isSlotValid(dayOfTheYear, timeSlot))
+            throw new InvalidTimeException(String.format("Time slot '%s' is invalid for ride '%s'", timeSlot, ride.getName()));
+
+        if(!hasValidPass(visitorId, dayOfTheYear))
+            throw new PassNotFoundException(String.format("No valid pass for day %s", dayOfTheYear));
     }
 
     public Map<String, Ride> getRides() {
@@ -204,6 +215,18 @@ public class RideRepository {
         return this.rides.remove(name) != null;
     }
 
+    //TODO: Que pasa si me consultan por reservas y empiezan a crear nuevas?
+    private ConcurrentSkipListSet<Reservation> getUserReservationsByDay(String rideName, int dayOfTheYear, UUID visitorId){
+        bookedRides.putIfAbsent(rideName, new ConcurrentHashMap<>());
+
+        Map<UUID, ConcurrentMap<Integer, ConcurrentSkipListSet<Reservation>>> rideBookedSlotsByUser = bookedRides.get(rideName);
+        rideBookedSlotsByUser.putIfAbsent(visitorId, new ConcurrentHashMap<>());
+
+        ConcurrentMap<Integer, ConcurrentSkipListSet<Reservation>> userBookedSlotsByDay = rideBookedSlotsByUser.get(visitorId);
+        userBookedSlotsByDay.putIfAbsent(dayOfTheYear, new ConcurrentSkipListSet<>());
+        return userBookedSlotsByDay.get(dayOfTheYear);
+    }
+
     /*
      *  Books a ride for a visitor
      *
@@ -217,37 +240,63 @@ public class RideRepository {
      */
     // TODO: Mover excepciones al Service?
     public boolean bookRide(String rideName, int dayOfTheYear, LocalTime timeSlot, UUID visitorId) {
+        Ride ride = getRide(rideName);
+        validateRideTimeAndAccess(ride, dayOfTheYear, timeSlot, visitorId);
         
-        if(!rideExists(rideName))
-            throw new RideNotFoundException(String.format("Ride '%s' does not exist", rideName));
-
-        Ride ride = rides.get(rideName);
-
-        if(!ride.isSlotValid(dayOfTheYear, timeSlot))
-            throw new InvalidTimeException(String.format("Time slot '%s' is invalid for ride '%s'", timeSlot, rideName));
-
-        if(!hasValidPass(visitorId, dayOfTheYear))
-            throw new PassNotFoundException(String.format("No valid pass for day %s", dayOfTheYear));
-
-        if (!bookedRides.containsKey(rideName))
-            bookedRides.put(rideName, new ConcurrentHashMap<>());
-
-        Map<UUID, ConcurrentMap<Integer, ConcurrentSkipListSet<Reservation>>> rideBookedSlotsByUser = bookedRides.get(rideName);
-        rideBookedSlotsByUser.putIfAbsent(visitorId, new ConcurrentHashMap<>());
-
-        ConcurrentMap<Integer, ConcurrentSkipListSet<Reservation>> userBookedSlotsByDay = rideBookedSlotsByUser.get(visitorId);
-        userBookedSlotsByDay.putIfAbsent(dayOfTheYear, new ConcurrentSkipListSet<>());
-        ConcurrentSkipListSet<Reservation> reservationSet = userBookedSlotsByDay.get(dayOfTheYear);
-
+        ConcurrentSkipListSet<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
 
         ReservationState state = ride.isSlotCapacitySet() ? ReservationState.PENDING : ReservationState.ACCEPTED;
         Reservation reservation = new Reservation(visitorId, state, dayOfTheYear, timeSlot);
 
-        if(reservationSet.contains(reservation))
+        if(reservations.contains(reservation))
             throw new AlreadyExistsException(String.format("Visitor '%s' already booked a ticket for '%s' at time slot '%s'", visitorId, rideName, timeSlot));
 
         //TODO: Podria hacer 'putIfAbsent' y chequear por false afuera
-        return reservationSet.add(reservation);
+        return reservations.add(reservation);
+    }
+
+    private Optional<Reservation> getReservation(String rideName, int dayOfTheYear, LocalTime timeSlot, UUID visitorId){
+        Ride ride = getRide(rideName);
+        validateRideTimeAndAccess(ride, dayOfTheYear, timeSlot, visitorId);
+
+        ConcurrentSkipListSet<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
+        if(reservations.isEmpty())
+            return Optional.empty();
+
+        ReservationState state = ride.isSlotCapacitySet() ? ReservationState.PENDING : ReservationState.ACCEPTED;
+        Reservation toFind = new Reservation(visitorId, state, dayOfTheYear, timeSlot);
+
+        for (Reservation r : reservations){
+            if(r.equals(toFind))
+                return Optional.of(r);
+        }
+
+        return Optional.empty();
+    }
+
+    /*
+     *  Confirms a previously booked ride
+     *
+     *  FAIL CONDITIONS:
+     *  - Ride slots not loaded yet
+     *  - Reservation does not exist
+     *  - Reservation already confirmed
+     *  - Invalid pass
+     *  - No ride under that name
+     *  - Invalid date
+     *  - Invalid time slot
+     *
+     */
+    public void confirmBooking(String rideName, int dayOfTheYear, LocalTime timeSlot, UUID visitorId){
+        Reservation reservation = getReservation(rideName, dayOfTheYear, timeSlot, visitorId).orElseThrow(() ->
+                new ReservationNotFoundException(String.format(
+                        "Reservation not found for visitor '%s' at ride '%s' at time slot '%s'", visitorId, rideName, timeSlot)));
+
+        if(reservation.isConfirmed())
+            throw new AlreadyConfirmedException(String.format(
+                    "Reservation for visitor '%s' at ride '%s' at time slot '%s' is already confirmed", visitorId, rideName, timeSlot));
+
+        reservation.confirm();
     }
 
     public boolean addVisitor(UUID visitorId, String rideName, int day) {

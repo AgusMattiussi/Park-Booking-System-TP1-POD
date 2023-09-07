@@ -67,7 +67,20 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
 
     @Override
     public void confirmBooking(BookRideRequest request, StreamObserver<BookRideResponse> responseObserver) {
-        super.confirmBooking(request, responseObserver);
+        LocalTime timeSlot;
+        try {
+            timeSlot = parseTime(request.getTimeSlot().getValue());
+        } catch (DateTimeParseException e) {
+            //TODO: Pensar que hacer en este caso. Quien maneja los throws?
+            return;
+        }
+
+        String rideName = request.getRideName().getValue();
+        int dayOfTheYear = Integer.parseInt(request.getDayOfYear().getValue());
+        UUID visitorId = UUID.fromString(request.getVisitorId().getValue());
+
+        //TODO: ver que onda throws
+        rideRepository.confirmBooking(rideName, dayOfTheYear, timeSlot, visitorId);
     }
 
     @Override

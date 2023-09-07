@@ -46,6 +46,10 @@ public class Reservation implements Comparable<Reservation> {
         setState(ReservationState.CANCELLED);
     }
 
+    public boolean isConfirmed(){
+        return this.state == ReservationState.ACCEPTED;
+    }
+
     @Override
     public int compareTo(Reservation other) {
         int dayDiff = this.day - other.day;
