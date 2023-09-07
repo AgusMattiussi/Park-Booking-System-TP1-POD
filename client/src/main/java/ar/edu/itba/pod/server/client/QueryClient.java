@@ -16,29 +16,25 @@ public class QueryClient {
     public static void main(String[] args) throws InterruptedException {
         logger.info("Query Client Starting ...");
 
-        ManagedChannel channel = buildChannel("localhost", 50051);
-
         Map<String, String> argMap = parseArguments(args);
-        final String serverAddress;
-        final String action;
-        final String day;
-        final String outPath;
+        final String serverAddress = getArgumentValue(argMap, "serverAddress");
+        final String action = getArgumentValue(argMap, "action");;
+        final String day = getArgumentValue(argMap, "day");
+        final String outPath = getArgumentValue(argMap, "outPath");
+
+        ManagedChannel channel = buildChannel(serverAddress);
 
         try {
-            System.out.println("Parsing command-line arguments");
-
-            serverAddress = getArgumentValue(argMap, "serverAddress");;
-            action = getArgumentValue(argMap, "action");
-            day = getArgumentValue(argMap, "day");
-            outPath = getArgumentValue(argMap, "outPath");
-
-            System.out.println("Server Address: " + serverAddress);
-            System.out.println("Action: " + action);
-            System.out.println("Day: " + day);
-            System.out.println("Output Path: " + outPath);
-
+            switch(action){
+                case "capacity" -> {
+                    System.out.println("capacity query");
+                }
+                case "confirmed" -> {
+                    System.out.println("confirmed query");
+                }
+            }
         } catch (RuntimeException e) {
-            System.err.println("Error parsing command-line arguments: " + e.getMessage());
+            System.err.println(e.getMessage());
         } finally {
             channel.shutdown().awaitTermination(10, TimeUnit.SECONDS);
         }
