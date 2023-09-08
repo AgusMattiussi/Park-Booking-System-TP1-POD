@@ -2,6 +2,7 @@ package ar.edu.itba.pod.server.server;
 
 import ar.edu.itba.pod.server.Models.ParkLocalTime;
 import ar.edu.itba.pod.server.Models.RideAvailability;
+import ar.edu.itba.pod.server.Models.requests.BookRideRequestModel;
 import ar.edu.itba.pod.server.Models.requests.GetRideAvailabilityRequestModel;
 import ar.edu.itba.pod.server.persistance.RideRepository;
 import com.google.protobuf.Empty;
@@ -63,23 +64,11 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
 
     @Override
     public void bookRide(BookRideRequest request, StreamObserver<BookRideResponse> responseObserver) {
-        //TODO: Validar parametros de entrada?
+        BookRideRequestModel requestModel = BookRideRequestModel.fromBookRideRequest(request);
 
-        ParkLocalTime timeSlot;
-        try {
-            timeSlot = ParkLocalTime.fromString(request.getTimeSlot().getValue());
-        } catch (DateTimeParseException e) {
-            //TODO: Pensar que hacer en este caso. Quien maneja los throws?
-            return;
-        }
+        boolean result = rideRepository.bookRide(requestModel.getRideName(), requestModel.getDay(),
+                requestModel.getTimeSlot(), requestModel.getVisitorId());
 
-        String rideName = request.getRideName().getValue();
-        int dayOfTheYear = Integer.parseInt(request.getDayOfYear().getValue());
-        UUID visitorId = UUID.fromString(request.getVisitorId().getValue());
-
-
-        //TODO: ver que onda throws
-        boolean result = rideRepository.bookRide(rideName, dayOfTheYear, timeSlot, visitorId);
         Models.SimpleStatusResponse status = result ? Models.SimpleStatusResponse.OK : Models.SimpleStatusResponse.ERROR;
 
         responseObserver.onNext(BookRideResponse.newBuilder().setStatus(status).build());
@@ -88,21 +77,11 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
 
     @Override
     public void confirmBooking(BookRideRequest request, StreamObserver<BookRideResponse> responseObserver) {
-        ParkLocalTime timeSlot;
-        try {
-            timeSlot = ParkLocalTime.fromString(request.getTimeSlot().getValue());
-        } catch (DateTimeParseException e) {
-            //TODO: Pensar que hacer en este caso. Quien maneja los throws?
-            return;
-        }
+        BookRideRequestModel requestModel = BookRideRequestModel.fromBookRideRequest(request);
 
-        String rideName = request.getRideName().getValue();
-        int dayOfTheYear = Integer.parseInt(request.getDayOfYear().getValue());
-        UUID visitorId = UUID.fromString(request.getVisitorId().getValue());
-
-        //TODO: ver que onda throws
         //TODO: Cambiar a boolean?
-        rideRepository.confirmBooking(rideName, dayOfTheYear, timeSlot, visitorId);
+        rideRepository.confirmBooking(requestModel.getRideName(), requestModel.getDay(), requestModel.getTimeSlot(),
+                requestModel.getVisitorId());
 
 
         responseObserver.onNext(BookRideResponse.newBuilder().setStatus(Models.SimpleStatusResponse.OK).build());
@@ -111,21 +90,12 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
 
     @Override
     public void cancelBooking(BookRideRequest request, StreamObserver<BookRideResponse> responseObserver) {
-        ParkLocalTime timeSlot;
-        try {
-            timeSlot = ParkLocalTime.fromString(request.getTimeSlot().getValue());
-        } catch (DateTimeParseException e) {
-            //TODO: Pensar que hacer en este caso. Quien maneja los throws?
-            return;
-        }
+        BookRideRequestModel requestModel = BookRideRequestModel.fromBookRideRequest(request);
 
-        String rideName = request.getRideName().getValue();
-        int dayOfTheYear = Integer.parseInt(request.getDayOfYear().getValue());
-        UUID visitorId = UUID.fromString(request.getVisitorId().getValue());
-
-        //TODO: ver que onda throws
         //TODO: Cambiar a boolean?
-        rideRepository.cancelBooking(rideName, dayOfTheYear, timeSlot, visitorId);
+        rideRepository.cancelBooking(requestModel.getRideName(), requestModel.getDay(), requestModel.getTimeSlot(),
+                requestModel.getVisitorId());
+
         responseObserver.onNext(BookRideResponse.newBuilder().setStatus(Models.SimpleStatusResponse.OK).build());
         responseObserver.onCompleted();
     }
