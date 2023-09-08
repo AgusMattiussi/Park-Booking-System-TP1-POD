@@ -39,7 +39,7 @@ public class RideRepository {
     }
 
     private void checkValidSlot(RideTime rideTime, int slotTime){
-        long open_minutes = rideTime.getClose().until(rideTime.getOpen(), ChronoUnit.MINUTES);
+        long open_minutes = rideTime.getOpen().until(rideTime.getClose(), ChronoUnit.MINUTES);
         if(open_minutes < slotTime){
             throw new SlotCapacityException("Slot of " + slotTime + " minutes is not possible, between " + rideTime.getOpen() + " and " + rideTime.getClose());
         }
@@ -133,10 +133,6 @@ public class RideRepository {
         validateDay(day);
 //        si la capacidad es negativa
         invalidCapacity(capacity);
-
-        Ride ride = this.rides.get(rideName);
-//        si ya tiene una capacidad asignada falla, sino la agrega
-        ride.setSlotCapacityPerDay(day, capacity);
     }
 
 //    True si puedo seguir reservando, false si no puedo
@@ -151,7 +147,7 @@ public class RideRepository {
                     passes+=1;
                 }
             }
-        }else if(passType == Models.PassTypeEnum.HALF_DAY){
+        }else if(passType == Models.PassTypeEnum.HALFDAY){
             return checkHalfDayPass(reservationTime);
         }
         return passType == Models.PassTypeEnum.UNLIMITED || passes < 3;
@@ -160,65 +156,71 @@ public class RideRepository {
     public AdminParkServiceOuterClass.SlotCapacityResponse addSlotsPerDay(String rideName, int day, int capacity){
         addSlotsExceptions(rideName, day, capacity);
         Ride ride = this.rides.get(rideName);
+//      si ya tiene una capacidad asignada falla, sino la agrega
+        ride.setSlotCapacityPerDay(day, capacity);
 
         Map<Integer, Map<ParkLocalTime, List<Reservation>>> reservationsPerDay = ride.getReservationsPerDay();
         List<Reservation> cancelledReservations = new ArrayList<>();
         int accepted = 0;
         int relocated = 0;
         int cancelled = 0;
-        for (Map.Entry<ParkLocalTime, List<Reservation>> reservations: reservationsPerDay.get(day).entrySet()) {
-            ParkLocalTime reservationTime = reservations.getKey();
-            List<Reservation> reservationList = reservations.getValue();
-            int i = 0;
-            while (i<reservationList.size()){
-                Reservation r = reservationList.get(i);
+        if(reservationsPerDay.containsKey(day)){
+            for (Map.Entry<ParkLocalTime, List<Reservation>> reservations: reservationsPerDay.get(day).entrySet()) {
+                ParkLocalTime reservationTime = reservations.getKey();
+                List<Reservation> reservationList = reservations.getValue();
+                int i = 0;
+                while (i<reservationList.size()){
+                    Reservation r = reservationList.get(i);
 //              Si el pase es THREE y puedo seguir guardando, o no es three
-                UUID visitorId = r.getVisitorId();
-                Models.PassTypeEnum passType = this.parkPasses.get(visitorId).get(day).getType();
+                    UUID visitorId = r.getVisitorId();
+                    Models.PassTypeEnum passType = this.parkPasses.get(visitorId).get(day).getType();
 
-                if (checkVisitorPass(passType, visitorId, reservationList, reservationTime)){
+                    if (checkVisitorPass(passType, visitorId, reservationList, reservationTime)){
 //              Primero acepto la capacidad que me permite cada slot
-                    if(i<capacity){
+                        if(i<capacity){
 //                  Si la estoy reubicando mantiene el estado de pendiente y sera confirmada luego
-                        if(r.getState() == ReservationState.RELOCATED){
-                            relocated+=1;
-                        }else{
-                            r.confirm();
-                            accepted+=1;
-                        }
-                    }else{
-//                  Luego reubico las que no entran y cancelo las que no puedo ubicar
-                        for (Map.Entry<ParkLocalTime, List<Reservation>> afterTimeR: reservationsPerDay.get(day).entrySet()) {
-//                      Si el pase del visitante es de tipo HalfDay y son desp de las 14 no lo puedo reubicar
-                            ParkLocalTime afterTime = afterTimeR.getKey();
-                            if(passType == Models.PassTypeEnum.HALF_DAY && checkHalfDayPass(afterTime)) {
-                                break;
+                            if(r.getState() == ReservationState.RELOCATED){
+                                relocated+=1;
+                            }else{
+                                r.confirm();
+                                accepted+=1;
                             }
-//                      Se deberán intentar todos los slots posteriores al de la reserva original.
-                            if(afterTime.isAfter(reservationTime)){
-                                List<Reservation> afterReservations = afterTimeR.getValue();
-//                          La puedo reubicar en caso de que no haya reservas aceptadas o pendientes que superen la capacidad
-                                if(afterReservations.size() < capacity - 1){
-                                    r.relocate();
-                                    afterReservations.add(r);
-                                    reservationList.remove(r);
+                        }else{
+//                  Luego reubico las que no entran y cancelo las que no puedo ubicar
+                            for (Map.Entry<ParkLocalTime, List<Reservation>> afterTimeR: reservationsPerDay.get(day).entrySet()) {
+//                      Si el pase del visitante es de tipo HalfDay y son desp de las 14 no lo puedo reubicar
+                                ParkLocalTime afterTime = afterTimeR.getKey();
+                                if(passType == Models.PassTypeEnum.HALFDAY && checkHalfDayPass(afterTime)) {
                                     break;
+                                }
+//                      Se deberán intentar todos los slots posteriores al de la reserva original.
+                                if(afterTime.isAfter(reservationTime)){
+                                    List<Reservation> afterReservations = afterTimeR.getValue();
+//                          La puedo reubicar en caso de que no haya reservas aceptadas o pendientes que superen la capacidad
+                                    if(afterReservations.size() < capacity - 1){
+                                        r.relocate();
+                                        afterReservations.add(r);
+                                        reservationList.remove(r);
+                                        break;
+                                    }
                                 }
                             }
                         }
-                    }
 //                    Si sigue pendiente es porque no la pude reubicar => cancelo
-                    if(r.getState() == ReservationState.PENDING){
-                        r.cancel();
-                        cancelledReservations.add(r);
-                        reservationList.remove(r);
-                        cancelled+=1;
+                        if(r.getState() == ReservationState.PENDING){
+                            r.cancel();
+                            cancelledReservations.add(r);
+                            reservationList.remove(r);
+                            cancelled+=1;
+                        }
                     }
+                    i++;
                 }
-                i++;
             }
+            ride.setCancelledReservations(cancelledReservations);
         }
-        ride.setCancelledReservations(cancelledReservations);
+
+
 
         return AdminParkServiceOuterClass.SlotCapacityResponse.newBuilder()
                 .setAcceptedAmount(accepted).setCancelledAmount(cancelled).setRelocatedAmount(relocated)

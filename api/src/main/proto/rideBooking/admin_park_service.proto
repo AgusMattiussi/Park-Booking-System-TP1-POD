@@ -8,7 +8,7 @@ package rideBooking;
 service AdminParkService {
   // 1. Agregar una atracción al parque
   // return ride id
-  rpc AddRide(AddRideRequest) returns(google.protobuf.Int32Value);
+  rpc AddRide(AddRideRequest) returns(google.protobuf.BoolValue);
   // 2. Agregar un pase de atracciones al parque
   // return if pass is created
   rpc AddPassToPark(AddPassRequest) returns(google.protobuf.BoolValue);

@@ -22,17 +22,19 @@ public class AdminParkServer extends AdminParkServiceGrpc.AdminParkServiceImplBa
     private static final RideRepository repository = RideRepository.getInstance();
 
     @Override
-    public void addRide(AddRideRequest request, StreamObserver<Int32Value> responseObserver) {
+    public void addRide(AddRideRequest request, StreamObserver<BoolValue> responseObserver) {
         Optional<Ride> newRide = repository.addRide(request.getRideName(), new RideTime(request.getRideTime()), request.getSlotMinutes());
         newRide.ifPresentOrElse(
                 ride -> {
-                    responseObserver.onNext(Int32Value.of(ride.getId()));
+                    responseObserver.onNext(BoolValue.of(true));
                     responseObserver.onCompleted();
                 },
                 () -> {
-                    final String msg = "Could not create Ride " + request.getRideName();
-                    logger.error(msg);
-                    responseObserver.onError(Status.INTERNAL.withDescription(msg).asRuntimeException());
+                    responseObserver.onNext(BoolValue.of(false));
+                    responseObserver.onCompleted();
+//                    final String msg = "Could not create Ride " + request.getRideName();
+//                    logger.error(msg);
+//                    responseObserver.onError(Status.INTERNAL.withDescription(msg).asRuntimeException());
                 }
         );
     }
@@ -46,9 +48,11 @@ public class AdminParkServer extends AdminParkServiceGrpc.AdminParkServiceImplBa
                     responseObserver.onCompleted();
                 },
                 () -> {
-                    final String msg = "Could not create Pass for visitor " + request.getVisitorId() + " for the day " + request.getValidDay();
-                    logger.error(msg);
-                    responseObserver.onError(Status.INTERNAL.withDescription(msg).asRuntimeException());
+                    responseObserver.onNext(BoolValue.of(false));
+                    responseObserver.onCompleted();
+//                    final String msg = "Could not create Pass for visitor " + request.getVisitorId() + " for the day " + request.getValidDay();
+//                    logger.error(msg);
+//                    responseObserver.onError(Status.INTERNAL.withDescription(msg).asRuntimeException());
                 }
         );
     }

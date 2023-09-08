@@ -4,6 +4,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rideBooking.Models;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -13,9 +14,10 @@ import java.util.Map;
 public final class ClientUtils {
     private final static Logger logger = LoggerFactory.getLogger(ClientUtils.class);
 
+    public final static String INPUT_PATH = "inPath";
     public final static String SERVER_ADDRESS = "serverAddress";
     public final static String ACTION_NAME = "action";
-    public final static String RIDE_NAME = "rideName";
+    public final static String RIDE_NAME = "ride";
     public final static String OPEN_TIME = "openTime";
     public final static String CLOSE_TIME = "closeTime";
     public final static String SLOT_MINUTES = "slotMinutes";
@@ -57,7 +59,6 @@ public final class ClientUtils {
             System.err.println("Error creating output file");
         }
     }
-
 
 }
 
