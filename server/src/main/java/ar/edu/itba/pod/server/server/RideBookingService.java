@@ -2,6 +2,7 @@ package ar.edu.itba.pod.server.server;
 
 import ar.edu.itba.pod.server.Models.ParkLocalTime;
 import ar.edu.itba.pod.server.Models.RideAvailability;
+import ar.edu.itba.pod.server.Models.requests.GetRideAvailabilityRequestModel;
 import ar.edu.itba.pod.server.persistance.RideRepository;
 import com.google.protobuf.Empty;
 import com.google.protobuf.StringValue;
@@ -15,7 +16,7 @@ import rideBooking.RideBookingServiceGrpc;
 import rideBooking.RideBookingServiceOuterClass;
 import rideBooking.RideBookingServiceOuterClass.*;
 
-//TODO: Para no repetir codigo, podria cambiar los parametros de RideRepository para recibir Reservation y crearla afuera
+//TODO: Hace falta try catch aca?
 public class RideBookingService extends RideBookingServiceGrpc.RideBookingServiceImplBase {
 
     private final RideRepository rideRepository = RideRepository.getInstance();
@@ -32,43 +33,18 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
 
     @Override
     public void getRideAvailability(GetRideAvailabilityRequest request, StreamObserver<GetRideAvailabilityResponse> responseObserver) {
-        ParkLocalTime startTimeSlot;
-        ParkLocalTime endTimeSlot = null;
-        String rideName = null;
-        int dayOfTheYear;
 
+        GetRideAvailabilityRequestModel requestModel = GetRideAvailabilityRequestModel.fromGetRideAvailabilityRequest(request);
 
-        try {
-            startTimeSlot = ParkLocalTime.fromString(request.getStartTimeSlot().getValue());
-        } catch (DateTimeParseException e) {
-            //TODO: Pensar que hacer en este caso. Quien maneja los throws?
-            return;
-
-        }
-
-        if(request.hasEndTimeSlot()) {
-            try {
-                endTimeSlot = ParkLocalTime.fromString(request.getEndTimeSlot().getValue());
-            } catch (DateTimeParseException e) {
-                //TODO: Pensar que hacer en este caso. Quien maneja los throws?
-                return;
-            }
-        }
-
-        if(request.hasRideName())
-            rideName = request.getRideName().getValue();
-
-        dayOfTheYear = Integer.parseInt(request.getDayOfYear().getValue());
-
-        // TODO: Este condicional puede no ser suficiente si estan mal los parametros
-        Map<String, Map<ParkLocalTime, RideAvailability>> ridesAvailability = new HashMap<>();
-        if(rideName != null){
-            if(endTimeSlot != null)
-                ridesAvailability = rideRepository.getRidesAvailability(rideName, startTimeSlot, endTimeSlot, dayOfTheYear);
+        // TODO: Y si resuelvo esto adentro de RideRepository?
+        Map<String, Map<ParkLocalTime, RideAvailability>> ridesAvailability;
+        if(requestModel.getRideName() != null){
+            if(requestModel.getEndTimeSlot() != null)
+                ridesAvailability = rideRepository.getRidesAvailability(requestModel.getRideName(), requestModel.getStartTimeSlot(), requestModel.getEndTimeSlot(), requestModel.getDay());
             else
-                ridesAvailability = rideRepository.getRidesAvailability(rideName, startTimeSlot, dayOfTheYear);
+                ridesAvailability = rideRepository.getRidesAvailability(requestModel.getRideName(), requestModel.getStartTimeSlot(), requestModel.getDay());
         } else {
-            ridesAvailability = rideRepository.getRidesAvailability(startTimeSlot, endTimeSlot, dayOfTheYear);
+            ridesAvailability = rideRepository.getRidesAvailability(requestModel.getStartTimeSlot(), requestModel.getEndTimeSlot(), requestModel.getDay());
         }
 
         GetRideAvailabilityResponse.Builder responseBuilder = GetRideAvailabilityResponse.newBuilder();
@@ -78,7 +54,6 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
                     RideBookingServiceOuterClass.RideAvailability.newBuilder().setRideName(StringValue.of(ride));
 
             availability.forEach((time, rideAvailability) -> rideAvailabilityBuilder.addTimeSlotAvailability(rideAvailability.convertToGRPC()));
-
             responseBuilder.addRideAvailability(rideAvailabilityBuilder.build());
         });
 
