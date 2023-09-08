@@ -56,12 +56,11 @@ public class Reservation implements Comparable<Reservation> {
 
     @Override
     public int compareTo(Reservation other) {
-        int dayDiff = this.day - other.day;
-        if (dayDiff != 0) {
-            return dayDiff;
+        int comp = Integer.compare(this.day, other.day);
+        if (comp == 0) {
+            return this.time.compareTo(other.time);
         }
-
-        return this.time.compareTo(other.time);
+        return comp;
     }
 
     /* Note that 'status' is not part of the equals() method */
@@ -70,11 +69,11 @@ public class Reservation implements Comparable<Reservation> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Reservation that = (Reservation) o;
-        return day == that.day && Objects.equals(visitorId, that.visitorId) && Objects.equals(time, that.time);
+        return day == that.day && visitorId.equals(that.visitorId) && time.equals(that.time);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(visitorId, state, day, time);
+        return Objects.hash(visitorId, day, time);
     }
 }
