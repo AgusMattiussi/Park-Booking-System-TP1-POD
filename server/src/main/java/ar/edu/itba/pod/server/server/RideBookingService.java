@@ -87,8 +87,13 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
         int dayOfTheYear = Integer.parseInt(request.getDayOfYear().getValue());
         UUID visitorId = UUID.fromString(request.getVisitorId().getValue());
 
+
         //TODO: ver que onda throws
-        rideRepository.bookRide(rideName, dayOfTheYear, timeSlot, visitorId);
+        boolean result = rideRepository.bookRide(rideName, dayOfTheYear, timeSlot, visitorId);
+        Models.SimpleStatusResponse status = result ? Models.SimpleStatusResponse.OK : Models.SimpleStatusResponse.ERROR;
+
+        responseObserver.onNext(BookRideResponse.newBuilder().setStatus(status).build());
+        responseObserver.onCompleted();
     }
 
     // TODO: Falta response
