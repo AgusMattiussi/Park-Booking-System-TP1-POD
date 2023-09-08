@@ -8,8 +8,6 @@ import ar.edu.itba.pod.server.persistance.RideRepository;
 import com.google.protobuf.Empty;
 import com.google.protobuf.StringValue;
 import io.grpc.stub.StreamObserver;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.*;
 
 import rideBooking.Models;
@@ -48,6 +46,11 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
             ridesAvailability = rideRepository.getRidesAvailability(requestModel.getStartTimeSlot(), requestModel.getEndTimeSlot(), requestModel.getDay());
         }
 
+        responseObserver.onNext(buildGetRideAvailabilityResponse(ridesAvailability));
+        responseObserver.onCompleted();
+    }
+
+    private GetRideAvailabilityResponse buildGetRideAvailabilityResponse(Map<String, Map<ParkLocalTime, RideAvailability>> ridesAvailability){
         GetRideAvailabilityResponse.Builder responseBuilder = GetRideAvailabilityResponse.newBuilder();
 
         ridesAvailability.forEach((ride, availability) -> {
@@ -58,8 +61,7 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
             responseBuilder.addRideAvailability(rideAvailabilityBuilder.build());
         });
 
-        responseObserver.onNext(responseBuilder.build());
-        responseObserver.onCompleted();
+        return responseBuilder.build();
     }
 
     @Override
@@ -82,7 +84,6 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
         //TODO: Cambiar a boolean?
         rideRepository.confirmBooking(requestModel.getRideName(), requestModel.getDay(), requestModel.getTimeSlot(),
                 requestModel.getVisitorId());
-
 
         responseObserver.onNext(BookRideResponse.newBuilder().setStatus(Models.SimpleStatusResponse.OK).build());
         responseObserver.onCompleted();

@@ -23,6 +23,15 @@ public class BookRideRequestModel {
         if(day < 1 || day > 365)
             throw new IllegalArgumentException("Day must be between 1 and 365");
 
+        if(timeSlot == null)
+            throw new IllegalArgumentException("Time slot must not be null");
+
+        if(rideName == null)
+            throw new IllegalArgumentException("Ride name must not be null");
+
+        if(visitorId == null)
+            throw new IllegalArgumentException("Visitor ID must not be null");
+
         this.rideName = rideName;
         this.day = day;
         this.timeSlot = timeSlot;
@@ -46,6 +55,15 @@ public class BookRideRequestModel {
     }
 
     public static BookRideRequestModel fromBookRideRequest(RideBookingServiceOuterClass.BookRideRequest request){
+        if(!request.hasDayOfYear())
+            throw new IllegalArgumentException("Must provide a day");
+
+        if(!request.hasVisitorId())
+            throw new IllegalArgumentException("Must provide a visitor ID");
+
+        if(!request.hasTimeSlot())
+            throw new IllegalArgumentException("Must provide a time slot");
+
         String rideName = request.getRideName().getValue();
         int dayOfTheYear = Integer.parseInt(request.getDayOfYear().getValue());
         ParkLocalTime timeSlot = ParkLocalTime.fromString(request.getTimeSlot().getValue());
