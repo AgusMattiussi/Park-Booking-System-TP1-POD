@@ -1,9 +1,15 @@
 package ar.edu.itba.pod.server.Models;
 
+import com.google.protobuf.Int32Value;
+import com.google.protobuf.StringValue;
+import rideBooking.RideBookingServiceOuterClass;
+import java.time.format.DateTimeFormatter;
+
+
 import java.time.LocalTime;
 import java.util.Objects;
 
-public class RideAvailability implements Comparable<RideAvailability> {
+public class RideAvailability implements Comparable<RideAvailability>, GRPCModel<RideBookingServiceOuterClass.TimeSlotAvailability> {
     private final LocalTime timeSlot;
     private final int pendingBookingsCount;
     private final int confirmedBookingsCount;
@@ -48,5 +54,18 @@ public class RideAvailability implements Comparable<RideAvailability> {
     @Override
     public int compareTo(RideAvailability o) {
         return this.timeSlot.compareTo(o.timeSlot);
+    }
+
+
+    @Override
+    public RideBookingServiceOuterClass.TimeSlotAvailability convertToGRPC() {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
+
+        return RideBookingServiceOuterClass.TimeSlotAvailability.newBuilder()
+                       .setTimeSlot(StringValue.of(timeSlot.format(formatter)))
+                       .setConfirmedBookings(Int32Value.of(confirmedBookingsCount))
+                       .setPendingBookings(Int32Value.of(pendingBookingsCount))
+                       .setRideCapacity(Int32Value.of(rideCapacity))
+                       .build();
     }
 }

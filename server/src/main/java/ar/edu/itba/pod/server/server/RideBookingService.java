@@ -33,17 +33,16 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
         GetRideResponse.Builder responseBuilder = GetRideResponse.newBuilder();
 
         rideRepository.getRidesList().forEach(ride -> responseBuilder.addRides(ride.convertToGRPC()));
-
         responseObserver.onNext(responseBuilder.build());
         responseObserver.onCompleted();
     }
 
     @Override
     public void getRideAvailability(GetRideAvailabilityRequest request, StreamObserver<GetRideAvailabilityResponse> responseObserver) {
-        LocalTime startTimeSlot = null;
+        LocalTime startTimeSlot;
         LocalTime endTimeSlot = null;
         String rideName = null;
-        int dayOfTheYear = 0;
+        int dayOfTheYear;
 
 
         try {
@@ -85,17 +84,8 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
             RideBookingServiceOuterClass.RideAvailability.Builder rideAvailabilityBuilder =
                     RideBookingServiceOuterClass.RideAvailability.newBuilder().setRideName(StringValue.of(ride));
 
-            availability.forEach((time, rideAvailability) -> {
+            availability.forEach((time, rideAvailability) -> rideAvailabilityBuilder.addTimeSlotAvailability(rideAvailability.convertToGRPC()));
 
-               TimeSlotAvailability timeSlotAvailability = TimeSlotAvailability.newBuilder()
-                       .setTimeSlot(StringValue.of(time.toString()))
-                       .setConfirmedBookings(Int32Value.of(rideAvailability.getConfirmedBookingsCount()))
-                       .setPendingBookings(Int32Value.of(rideAvailability.getPendingBookingsCount()))
-                       .setRideCapacity(Int32Value.of(rideAvailability.getRideCapacity()))
-                       .build();
-
-               rideAvailabilityBuilder.addTimeSlotAvailability(timeSlotAvailability);
-            });
             responseBuilder.addRideAvailability(rideAvailabilityBuilder.build());
         });
 
@@ -145,6 +135,7 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
         //TODO: ver que onda throws
         //TODO: Cambiar a boolean?
         rideRepository.confirmBooking(rideName, dayOfTheYear, timeSlot, visitorId);
+
 
         responseObserver.onNext(BookRideResponse.newBuilder().setStatus(Models.SimpleStatusResponse.OK).build());
         responseObserver.onCompleted();

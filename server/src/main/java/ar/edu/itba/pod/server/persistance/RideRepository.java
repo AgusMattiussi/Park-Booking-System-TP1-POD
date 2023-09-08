@@ -156,6 +156,7 @@ public class RideRepository {
         }
         return passType == Models.PassTypeEnum.UNLIMITED || passes < 3;
     }
+
     public AdminParkServiceOuterClass.SlotCapacityResponse addSlotsPerDay(String rideName, int day, int capacity){
         addSlotsExceptions(rideName, day, capacity);
         Ride ride = this.rides.get(rideName);
