@@ -25,17 +25,17 @@ public class AdminClient {
         logger.info("Admin Client Starting ...");
 
         Map<String, String> argMap = parseArguments(args);
-        final String serverAddress = getArgumentValue(argMap, "serverAddress");
-        final String action = getArgumentValue(argMap, "action");
+        final String serverAddress = getArgumentValue(argMap, SERVER_ADDRESS);
+        final String action = getArgumentValue(argMap, ACTION_NAME);;
 
         ManagedChannel channel = ClientUtils.buildChannel(serverAddress);
 
         AdminParkServiceGrpc.AdminParkServiceBlockingStub stub = AdminParkServiceGrpc.newBlockingStub(channel);
 
         if(Objects.equals(action, "addParkPass")){
-            final String visitorId = getArgumentValue(argMap, "visitorId");
-            final String passType = getArgumentValue(argMap, "passType");
-            final String day = getArgumentValue(argMap, "day");
+            final String visitorId = getArgumentValue(argMap, VISITOR_ID);
+            final String passType = getArgumentValue(argMap, PASS_TYPE);
+            final String day = getArgumentValue(argMap, DAY);
 
             AddPassRequest addPassRequest = AddPassRequest.newBuilder().setPassTypeValue(Integer.parseInt(passType)).setVisitorId(visitorId).setValidDay(Integer.parseInt(day)).build();
             String return_info = "ParkPass " + passType + " for visitor "+ visitorId;
@@ -50,12 +50,12 @@ public class AdminClient {
                 System.out.println("Cannot add " + return_info + '.');
             }
        }else{
-            final String rideName = getArgumentValue(argMap, "rideName");
+            final String rideName = getArgumentValue(argMap, RIDE_NAME);
 
             if (Objects.equals(action, "addRide")){
-                final String openTime = getArgumentValue(argMap, "openTime");
-                final String closeTime = getArgumentValue(argMap, "closeTime");
-                final String slotMinutes = getArgumentValue(argMap, "slotMinutes");
+                final String openTime = getArgumentValue(argMap, OPEN_TIME);
+                final String closeTime = getArgumentValue(argMap, CLOSE_TIME);
+                final String slotMinutes = getArgumentValue(argMap, SLOT_MINUTES);
 
                 Models.RideTime rideTime = Models.RideTime.newBuilder().setClose(closeTime).setOpen(openTime).build();
                 AddRideRequest addRideRequest = AddRideRequest.newBuilder().setRideName(rideName).setRideTime(rideTime).setSlotMinutes(Integer.parseInt(slotMinutes)).build();
@@ -68,8 +68,8 @@ public class AdminClient {
                     System.out.println("Cannot add ride called " + rideName + '.');
                 }
             }else{
-                final String day = getArgumentValue(argMap, "day");
-                final String capacity = getArgumentValue(argMap, "capacity");
+                final String day = getArgumentValue(argMap, DAY);
+                final String capacity = getArgumentValue(argMap, CAPACITY);
 
                 AddSlotCapacityRequest addSlotCapacityRequest = AddSlotCapacityRequest.newBuilder().setRideName(rideName).setSlotCapacity(Integer.parseInt(capacity)).setValidDay(Integer.parseInt(day)).build();
 

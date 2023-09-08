@@ -6,17 +6,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
 public final class ClientUtils {
     private final static Logger logger = LoggerFactory.getLogger(ClientUtils.class);
+
+    public final static String SERVER_ADDRESS = "serverAddress";
+    public final static String ACTION_NAME = "action";
+    public final static String RIDE_NAME = "rideName";
+    public final static String OPEN_TIME = "openTime";
+    public final static String CLOSE_TIME = "closeTime";
+    public final static String SLOT_MINUTES = "slotMinutes";
+    public final static String DAY = "day";
+    public final static String VISITOR_ID = "visitorId";
+    public final static String PASS_TYPE = "passType";
+    public final static String CAPACITY = "capacity";
+    public final static String OUTPATH = "outPath";
+
 
     public static ManagedChannel buildChannel(String serverAddress){
         return ManagedChannelBuilder.forTarget(serverAddress)
@@ -24,6 +32,7 @@ public final class ClientUtils {
                 .build();
     }
 
+    //TODO: manejar errores?
     public static Map<String, String> parseArguments(String[] args) {
         Map<String, String> argMap = new HashMap<>();
         for (String arg : args) {
