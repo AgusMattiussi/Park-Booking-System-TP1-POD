@@ -9,9 +9,9 @@ public class Reservation implements Comparable<Reservation> {
     private final UUID visitorId;
     private ReservationState state;
     private final int day;
-    private final LocalTime time;
+    private final ParkLocalTime time;
 
-    public Reservation(UUID visitorId, ReservationState state, int day, LocalTime time) {
+    public Reservation(UUID visitorId, ReservationState state, int day, ParkLocalTime time) {
         this.visitorId = visitorId;
         this.state = state;
         this.day = day;
@@ -30,7 +30,7 @@ public class Reservation implements Comparable<Reservation> {
         return day;
     }
 
-    public LocalTime getTime() {
+    public ParkLocalTime getTime() {
         return time;
     }
 

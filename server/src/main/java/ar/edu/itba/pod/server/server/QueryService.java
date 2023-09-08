@@ -11,8 +11,6 @@ import rideBooking.QueryServiceOuterClass;
 import rideBooking.QueryServiceOuterClass.CapacitySuggestionResponse;
 import rideBooking.QueryServiceOuterClass.ConfirmedBookingsResponse;
 import rideBooking.Models.ReservationState;
-
-import java.time.LocalTime;
 import java.util.*;
 
 public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
@@ -38,11 +36,11 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
             if(true) {
                 String rideName = ride.getName();
 
-                Map<Integer, Map<LocalTime, List<Reservation>>> reservations = ride.getReservationsPerDay();
+                Map<Integer, Map<ParkLocalTime, List<Reservation>>> reservations = ride.getReservationsPerDay();
                 int pendingBookings = 0;
 
-                for (Map.Entry<LocalTime, List<Reservation>> entry : reservations.get(request.getDayOfYear().getValue()).entrySet()) {
-                    LocalTime slot = entry.getKey();
+                for (Map.Entry<ParkLocalTime, List<Reservation>> entry : reservations.get(request.getDayOfYear().getValue()).entrySet()) {
+                    ParkLocalTime slot = entry.getKey();
                     for (Reservation reservation : entry.getValue()) {
                         if (reservation.getState() == ReservationState.PENDING) {
                             pendingBookings++;
@@ -81,10 +79,10 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
         rides.values().forEach(ride -> {
             String rideName = ride.getName();
 
-            Map<Integer, Map<LocalTime, List<Reservation>>> reservations = ride.getReservationsPerDay();
+            Map<Integer, Map<ParkLocalTime, List<Reservation>>> reservations = ride.getReservationsPerDay();
 
-            for (Map.Entry<LocalTime, List<Reservation>> entry : reservations.get(request.getDayOfYear().getValue()).entrySet()) {
-                LocalTime slot = entry.getKey();
+            for (Map.Entry<ParkLocalTime, List<Reservation>> entry : reservations.get(request.getDayOfYear().getValue()).entrySet()) {
+                ParkLocalTime slot = entry.getKey();
                 for (Reservation reservation : entry.getValue()) {
                     if(reservation.getState() == ReservationState.ACCEPTED){
                         responseList.add(new ConfirmedBookings(rideName, reservation.getVisitorId().toString(), slot.toString()));

@@ -5,8 +5,6 @@ import ar.edu.itba.pod.server.exceptions.*;
 import rideBooking.AdminParkServiceOuterClass;
 import rideBooking.Models;
 import rideBooking.Models.ReservationState;
-
-import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,6 +12,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 public class RideRepository {
+
+    private static final ParkLocalTime HALF_DAY_TIME = ParkLocalTime.fromString("14:00");
 
     private static RideRepository instance;
     private final ConcurrentMap<String, Ride> rides;
@@ -60,8 +60,8 @@ public class RideRepository {
 
 
     //    Si el pase es halfDay y quiero reservas desp de las 14hs
-    private boolean checkHalfDayPass(LocalTime reservationTime){
-        return !reservationTime.isAfter(LocalTime.parse("14:00"));
+    private boolean checkHalfDayPass(ParkLocalTime reservationTime){
+        return !reservationTime.isAfter(HALF_DAY_TIME);
     }
 
     private void validateDay(int day){
@@ -70,7 +70,7 @@ public class RideRepository {
         }
     }
 
-    private void invalidTime(LocalTime before, LocalTime after){
+    private void invalidTime(ParkLocalTime before, ParkLocalTime after){
         if(after.isBefore(before)){
             throw new InvalidTimeException(after + " ride time must be after "+ before + " ride time");
         }
@@ -143,7 +143,7 @@ public class RideRepository {
 //    Chequeo si es half day que la reserva sea antes de las 14hs
 //    y si es three que no tenga 3 o mas ya hechas
     private boolean checkVisitorPass(Models.PassTypeEnum passType, UUID visitorId,  List<Reservation> reservationList,
-                                     LocalTime reservationTime){
+                                     ParkLocalTime reservationTime){
         int passes = 0;
         if(passType == Models.PassTypeEnum.THREE){
             for (Reservation r: reservationList) {
@@ -161,13 +161,13 @@ public class RideRepository {
         addSlotsExceptions(rideName, day, capacity);
         Ride ride = this.rides.get(rideName);
 
-        Map<Integer, Map<LocalTime, List<Reservation>>> reservationsPerDay = ride.getReservationsPerDay();
+        Map<Integer, Map<ParkLocalTime, List<Reservation>>> reservationsPerDay = ride.getReservationsPerDay();
         List<Reservation> cancelledReservations = new ArrayList<>();
         int accepted = 0;
         int relocated = 0;
         int cancelled = 0;
-        for (Map.Entry<LocalTime, List<Reservation>> reservations: reservationsPerDay.get(day).entrySet()) {
-            LocalTime reservationTime = reservations.getKey();
+        for (Map.Entry<ParkLocalTime, List<Reservation>> reservations: reservationsPerDay.get(day).entrySet()) {
+            ParkLocalTime reservationTime = reservations.getKey();
             List<Reservation> reservationList = reservations.getValue();
             int i = 0;
             while (i<reservationList.size()){
@@ -188,9 +188,9 @@ public class RideRepository {
                         }
                     }else{
 //                  Luego reubico las que no entran y cancelo las que no puedo ubicar
-                        for (Map.Entry<LocalTime, List<Reservation>> afterTimeR: reservationsPerDay.get(day).entrySet()) {
+                        for (Map.Entry<ParkLocalTime, List<Reservation>> afterTimeR: reservationsPerDay.get(day).entrySet()) {
 //                      Si el pase del visitante es de tipo HalfDay y son desp de las 14 no lo puedo reubicar
-                            LocalTime afterTime = afterTimeR.getKey();
+                            ParkLocalTime afterTime = afterTimeR.getKey();
                             if(passType == Models.PassTypeEnum.HALF_DAY && checkHalfDayPass(afterTime)) {
                                 break;
                             }
@@ -231,12 +231,12 @@ public class RideRepository {
         return rides.get(name);
     }
 
-    private void validateRideTimeSlot(Ride ride, int dayOfTheYear, LocalTime timeSlot){
+    private void validateRideTimeSlot(Ride ride, int dayOfTheYear, ParkLocalTime timeSlot){
         if(!ride.isSlotValid(dayOfTheYear, timeSlot))
             throw new InvalidTimeException(String.format("Time slot '%s' is invalid for ride '%s'", timeSlot, ride.getName()));
     }
 
-    private void validateRideTimeAndAccess(Ride ride, int dayOfTheYear, LocalTime timeSlot, UUID visitorId){
+    private void validateRideTimeAndAccess(Ride ride, int dayOfTheYear, ParkLocalTime timeSlot, UUID visitorId){
         validateRideTimeSlot(ride, dayOfTheYear, timeSlot);
 
         if(!hasValidPass(visitorId, dayOfTheYear))
@@ -283,7 +283,7 @@ public class RideRepository {
      *
      */
     // TODO: Mover excepciones al Service?
-    public boolean bookRide(String rideName, int dayOfTheYear, LocalTime timeSlot, UUID visitorId) {
+    public boolean bookRide(String rideName, int dayOfTheYear, ParkLocalTime timeSlot, UUID visitorId) {
         Ride ride = getRide(rideName);
         validateRideTimeAndAccess(ride, dayOfTheYear, timeSlot, visitorId);
         
@@ -299,7 +299,7 @@ public class RideRepository {
         return reservations.add(reservation);
     }
 
-    private Optional<Reservation> getReservation(String rideName, int dayOfTheYear, LocalTime timeSlot, UUID visitorId){
+    private Optional<Reservation> getReservation(String rideName, int dayOfTheYear, ParkLocalTime timeSlot, UUID visitorId){
         ConcurrentSkipListSet<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
         if(!reservations.isEmpty()) {
             Reservation toFind = new Reservation(visitorId, ReservationState.UNKNOWN_0, dayOfTheYear, timeSlot);
@@ -326,7 +326,7 @@ public class RideRepository {
      *  - Invalid time slot
      *
      */
-    public void confirmBooking(String rideName, int dayOfTheYear, LocalTime timeSlot, UUID visitorId){
+    public void confirmBooking(String rideName, int dayOfTheYear, ParkLocalTime timeSlot, UUID visitorId){
         Ride ride = getRide(rideName);
         validateRideTimeAndAccess(ride, dayOfTheYear, timeSlot, visitorId);
 
@@ -355,7 +355,7 @@ public class RideRepository {
      *  - Invalid time slot
      *
      */
-    public void cancelBooking(String rideName, int dayOfTheYear, LocalTime timeSlot, UUID visitorId) {
+    public void cancelBooking(String rideName, int dayOfTheYear, ParkLocalTime timeSlot, UUID visitorId) {
         Ride ride = getRide(rideName);
         validateRideTimeAndAccess(ride, dayOfTheYear, timeSlot, visitorId);
 
@@ -407,7 +407,7 @@ public class RideRepository {
     }
 
     /* Returns the availability for a ride in a given day and time slot */
-    private RideAvailability getRideAvailabilityForTimeSlot(String rideName, LocalTime timeSlot, int day) {
+    private RideAvailability getRideAvailabilityForTimeSlot(String rideName, ParkLocalTime timeSlot, int day) {
         Ride ride = getRide(rideName);
         // TODO: Extraer validacion al service?
         validateDay(day);
@@ -419,16 +419,16 @@ public class RideRepository {
                 ride.getCapacityForTimeSlot(day, timeSlot));
     }
 
-    private Map<LocalTime, RideAvailability> getRideAvailability(String rideName, LocalTime startTimeSlot, LocalTime endTimeSlot, int day){
+    private Map<ParkLocalTime, RideAvailability> getRideAvailability(String rideName, ParkLocalTime startTimeSlot, ParkLocalTime endTimeSlot, int day){
         // TODO: Validar que los tiempos sean correctos (intervalos de 15 min)
         // TODO: Extraer esta validacion?
         if (startTimeSlot.isAfter(endTimeSlot)) {
             throw new IllegalArgumentException("Start time slot must be before end time slot");
         }
 
-        Map<LocalTime, RideAvailability> timeSlotAvailability = new HashMap<>();
+        Map<ParkLocalTime, RideAvailability> timeSlotAvailability = new HashMap<>();
 
-        LocalTime currentTimeSlot = startTimeSlot;
+        ParkLocalTime currentTimeSlot = startTimeSlot;
         while (currentTimeSlot.isBefore(endTimeSlot.plusMinutes(15))) {
             timeSlotAvailability.put(currentTimeSlot, getRideAvailabilityForTimeSlot(rideName, currentTimeSlot, day));
 
@@ -438,20 +438,20 @@ public class RideRepository {
         return timeSlotAvailability;
     }
 
-    public Map<String, Map<LocalTime, RideAvailability>> getRidesAvailability(String rideName, LocalTime timeSlot, int day){
-        Map<String, Map<LocalTime, RideAvailability>> rideAvailability = new HashMap<>();
+    public Map<String, Map<ParkLocalTime, RideAvailability>> getRidesAvailability(String rideName, ParkLocalTime timeSlot, int day){
+        Map<String, Map<ParkLocalTime, RideAvailability>> rideAvailability = new HashMap<>();
         rideAvailability.put(rideName, getRideAvailability(rideName, timeSlot, timeSlot, day));
         return rideAvailability;
     }
 
-    public Map<String, Map<LocalTime, RideAvailability>> getRidesAvailability(String rideName, LocalTime startTimeSlot, LocalTime endTimeSlot, int day) {
-        Map<String, Map<LocalTime, RideAvailability>> rideAvailability = new HashMap<>();
+    public Map<String, Map<ParkLocalTime, RideAvailability>> getRidesAvailability(String rideName, ParkLocalTime startTimeSlot, ParkLocalTime endTimeSlot, int day) {
+        Map<String, Map<ParkLocalTime, RideAvailability>> rideAvailability = new HashMap<>();
         rideAvailability.put(rideName, getRideAvailability(rideName, startTimeSlot, endTimeSlot, day));
         return rideAvailability;
     }
 
-    public Map<String, Map<LocalTime, RideAvailability>> getRidesAvailability(LocalTime startTimeSlot, LocalTime endTimeSlot, int day) {
-        Map<String, Map<LocalTime, RideAvailability>> rideAvailability = new HashMap<>();
+    public Map<String, Map<ParkLocalTime, RideAvailability>> getRidesAvailability(ParkLocalTime startTimeSlot, ParkLocalTime endTimeSlot, int day) {
+        Map<String, Map<ParkLocalTime, RideAvailability>> rideAvailability = new HashMap<>();
 
         for (String rideName : rides.keySet())
             rideAvailability.put(rideName, getRideAvailability(rideName, startTimeSlot, endTimeSlot, day));

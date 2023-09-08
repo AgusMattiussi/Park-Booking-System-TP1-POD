@@ -1,18 +1,11 @@
 package ar.edu.itba.pod.server.server;
 
-import ar.edu.itba.pod.server.Models.Ride;
+import ar.edu.itba.pod.server.Models.ParkLocalTime;
 import ar.edu.itba.pod.server.Models.RideAvailability;
 import ar.edu.itba.pod.server.persistance.RideRepository;
 import com.google.protobuf.Empty;
-import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import io.grpc.stub.StreamObserver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
@@ -39,14 +32,14 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
 
     @Override
     public void getRideAvailability(GetRideAvailabilityRequest request, StreamObserver<GetRideAvailabilityResponse> responseObserver) {
-        LocalTime startTimeSlot;
-        LocalTime endTimeSlot = null;
+        ParkLocalTime startTimeSlot;
+        ParkLocalTime endTimeSlot = null;
         String rideName = null;
         int dayOfTheYear;
 
 
         try {
-            startTimeSlot = parseTime(request.getStartTimeSlot().getValue());
+            startTimeSlot = ParkLocalTime.fromString(request.getStartTimeSlot().getValue());
         } catch (DateTimeParseException e) {
             //TODO: Pensar que hacer en este caso. Quien maneja los throws?
             return;
@@ -55,7 +48,7 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
 
         if(request.hasEndTimeSlot()) {
             try {
-                endTimeSlot = parseTime(request.getEndTimeSlot().getValue());
+                endTimeSlot = ParkLocalTime.fromString(request.getEndTimeSlot().getValue());
             } catch (DateTimeParseException e) {
                 //TODO: Pensar que hacer en este caso. Quien maneja los throws?
                 return;
@@ -68,7 +61,7 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
         dayOfTheYear = Integer.parseInt(request.getDayOfYear().getValue());
 
         // TODO: Este condicional puede no ser suficiente si estan mal los parametros
-        Map<String, Map<LocalTime, RideAvailability>> ridesAvailability = new HashMap<>();
+        Map<String, Map<ParkLocalTime, RideAvailability>> ridesAvailability = new HashMap<>();
         if(rideName != null){
             if(endTimeSlot != null)
                 ridesAvailability = rideRepository.getRidesAvailability(rideName, startTimeSlot, endTimeSlot, dayOfTheYear);
@@ -97,9 +90,9 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
     public void bookRide(BookRideRequest request, StreamObserver<BookRideResponse> responseObserver) {
         //TODO: Validar parametros de entrada?
 
-        LocalTime timeSlot;
+        ParkLocalTime timeSlot;
         try {
-            timeSlot = parseTime(request.getTimeSlot().getValue());
+            timeSlot = ParkLocalTime.fromString(request.getTimeSlot().getValue());
         } catch (DateTimeParseException e) {
             //TODO: Pensar que hacer en este caso. Quien maneja los throws?
             return;
@@ -120,9 +113,9 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
 
     @Override
     public void confirmBooking(BookRideRequest request, StreamObserver<BookRideResponse> responseObserver) {
-        LocalTime timeSlot;
+        ParkLocalTime timeSlot;
         try {
-            timeSlot = parseTime(request.getTimeSlot().getValue());
+            timeSlot = ParkLocalTime.fromString(request.getTimeSlot().getValue());
         } catch (DateTimeParseException e) {
             //TODO: Pensar que hacer en este caso. Quien maneja los throws?
             return;
@@ -143,9 +136,9 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
 
     @Override
     public void cancelBooking(BookRideRequest request, StreamObserver<BookRideResponse> responseObserver) {
-        LocalTime timeSlot;
+        ParkLocalTime timeSlot;
         try {
-            timeSlot = parseTime(request.getTimeSlot().getValue());
+            timeSlot = ParkLocalTime.fromString(request.getTimeSlot().getValue());
         } catch (DateTimeParseException e) {
             //TODO: Pensar que hacer en este caso. Quien maneja los throws?
             return;
@@ -162,8 +155,5 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
         responseObserver.onCompleted();
     }
 
-    private LocalTime parseTime(String time) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
-        return LocalTime.parse(time, formatter);
-    }
+
 }

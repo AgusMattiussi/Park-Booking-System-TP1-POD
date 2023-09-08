@@ -4,25 +4,22 @@ import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import rideBooking.RideBookingServiceOuterClass;
 import java.time.format.DateTimeFormatter;
-
-
-import java.time.LocalTime;
 import java.util.Objects;
 
 public class RideAvailability implements Comparable<RideAvailability>, GRPCModel<RideBookingServiceOuterClass.TimeSlotAvailability> {
-    private final LocalTime timeSlot;
+    private final ParkLocalTime timeSlot;
     private final int pendingBookingsCount;
     private final int confirmedBookingsCount;
     private final int rideCapacity;
 
-    public RideAvailability(LocalTime timeSlot, int pendingBookingsCount, int confirmedBookingsCount, int rideCapacity) {
+    public RideAvailability(ParkLocalTime timeSlot, int pendingBookingsCount, int confirmedBookingsCount, int rideCapacity) {
         this.timeSlot = timeSlot;
         this.pendingBookingsCount = pendingBookingsCount;
         this.confirmedBookingsCount = confirmedBookingsCount;
         this.rideCapacity = rideCapacity;
     }
 
-    public LocalTime getTimeSlot() {
+    public ParkLocalTime getTimeSlot() {
         return timeSlot;
     }
 
@@ -62,7 +59,7 @@ public class RideAvailability implements Comparable<RideAvailability>, GRPCModel
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
 
         return RideBookingServiceOuterClass.TimeSlotAvailability.newBuilder()
-                       .setTimeSlot(StringValue.of(timeSlot.format(formatter)))
+                       .setTimeSlot(StringValue.of(timeSlot.toString()))
                        .setConfirmedBookings(Int32Value.of(confirmedBookingsCount))
                        .setPendingBookings(Int32Value.of(pendingBookingsCount))
                        .setRideCapacity(Int32Value.of(rideCapacity))

@@ -2,6 +2,9 @@ package ar.edu.itba.pod.server.Models;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalUnit;
+import java.util.Objects;
 
 /*
  *  This class is used to represent the time of a ride, which is a LocalTime with only the hour
@@ -10,7 +13,7 @@ import java.time.format.DateTimeFormatter;
  *  Ideally, this class would extend from LocalTime (java.time), but since LocalTime is declared
  *  as a final class, this is not possible. Therefore, this class is a wrapper for LocalTime.
  */
-public class ParkLocalTime {
+public class ParkLocalTime implements Comparable<ParkLocalTime> {
 
     private final LocalTime time;
 
@@ -34,7 +37,7 @@ public class ParkLocalTime {
         this.time = time;
     }
 
-    public LocalTime getTime() {
+    public LocalTime asLocalTime() {
         return time;
     }
 
@@ -43,5 +46,44 @@ public class ParkLocalTime {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
         return time.format(formatter);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ParkLocalTime that = (ParkLocalTime) o;
+        return time.equals(that.time);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(time);
+    }
+
+    @Override
+    public int compareTo(ParkLocalTime o) {
+        return time.compareTo(o.asLocalTime());
+    }
+
+    public long until(ParkLocalTime endExclusive, TemporalUnit unit) {
+        return time.until(endExclusive.asLocalTime(), unit);
+    }
+
+    public long until(Temporal endExclusive, TemporalUnit unit) {
+        return time.until(endExclusive, unit);
+    }
+
+    public boolean isBefore(ParkLocalTime other) {
+        return time.isBefore(other.asLocalTime());
+    }
+
+    public boolean isAfter(ParkLocalTime other) {
+        return time.isAfter(other.asLocalTime());
+    }
+
+    public ParkLocalTime plusMinutes(long minutesToAdd) {
+        return new ParkLocalTime(time.plusMinutes(minutesToAdd));
+    }
+
 
 }
