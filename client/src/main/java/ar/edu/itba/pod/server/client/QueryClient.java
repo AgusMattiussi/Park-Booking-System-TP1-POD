@@ -71,8 +71,8 @@ public class QueryClient {
                             .build());
 
                     generateConfirmedQueryFileContent(list, outPath);
-
                 }
+                default -> logger.error("Invalid action");
             }
         } catch (RuntimeException e) {
             System.err.println(e.getMessage());
