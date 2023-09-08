@@ -32,9 +32,8 @@ public class AdminParkServer extends AdminParkServiceGrpc.AdminParkServiceImplBa
                 () -> {
                     responseObserver.onNext(BoolValue.of(false));
                     responseObserver.onCompleted();
-//                    final String msg = "Could not create Ride " + request.getRideName();
-//                    logger.error(msg);
-//                    responseObserver.onError(Status.INTERNAL.withDescription(msg).asRuntimeException());
+                    final String msg = "Could not create Ride " + request.getRideName();
+                    logger.error(msg);
                 }
         );
     }
@@ -50,9 +49,8 @@ public class AdminParkServer extends AdminParkServiceGrpc.AdminParkServiceImplBa
                 () -> {
                     responseObserver.onNext(BoolValue.of(false));
                     responseObserver.onCompleted();
-//                    final String msg = "Could not create Pass for visitor " + request.getVisitorId() + " for the day " + request.getValidDay();
-//                    logger.error(msg);
-//                    responseObserver.onError(Status.INTERNAL.withDescription(msg).asRuntimeException());
+                    final String msg = "Could not create Pass for visitor " + request.getVisitorId() + " for the day " + request.getValidDay();
+                    logger.error(msg);
                 }
         );
     }

@@ -24,6 +24,10 @@ public class RideRepository {
     /* Maps visitor ID to ride notifications */
     private final ConcurrentMap<UUID, ConcurrentMap<Integer, ConcurrentSkipListSet<String>>> notifications;
 
+    private int acceptedAmount = 0;
+    private int relocatedAmount = 0;
+    private int cancelledAmount = 0;
+
     private RideRepository() {
         this.rides = new ConcurrentHashMap<>();
         this.parkPasses = new ConcurrentHashMap<>();
@@ -160,43 +164,36 @@ public class RideRepository {
         ride.setSlotCapacityPerDay(day, capacity);
 
         Map<Integer, Map<ParkLocalTime, List<Reservation>>> reservationsPerDay = ride.getReservationsPerDay();
-        List<Reservation> cancelledReservations = new ArrayList<>();
-        int accepted = 0;
-        int relocated = 0;
-        int cancelled = 0;
+
         if(reservationsPerDay.containsKey(day)){
-            for (Map.Entry<ParkLocalTime, List<Reservation>> reservations: reservationsPerDay.get(day).entrySet()) {
+            // Iterate over each member of the map
+            Set<Map.Entry<ParkLocalTime, List<Reservation>>> entrySet = reservationsPerDay.get(day).entrySet();
+            for (Map.Entry<ParkLocalTime, List<Reservation>> reservations: entrySet) {
                 ParkLocalTime reservationTime = reservations.getKey();
                 List<Reservation> reservationList = reservations.getValue();
-                int i = 0;
-                while (i<reservationList.size()){
+                for (int i = 0; i<reservationList.size(); i++){
                     Reservation r = reservationList.get(i);
-//              Si el pase es THREE y puedo seguir guardando, o no es three
                     UUID visitorId = r.getVisitorId();
                     Models.PassTypeEnum passType = this.parkPasses.get(visitorId).get(day).getType();
-
                     if (checkVisitorPass(passType, visitorId, reservationList, reservationTime)){
-//              Primero acepto la capacidad que me permite cada slot
-                        if(i<capacity){
-//                  Si la estoy reubicando mantiene el estado de pendiente y sera confirmada luego
+                        if(i<capacity){ // Agrego la cantidad que se me permite (capacity)
                             if(r.getState() == ReservationState.RELOCATED){
-                                relocated+=1;
+                                relocatedAmount +=1;
                             }else{
                                 r.confirm();
-                                accepted+=1;
+                                acceptedAmount +=1;
                             }
-                        }else{
-//                  Luego reubico las que no entran y cancelo las que no puedo ubicar
-                            for (Map.Entry<ParkLocalTime, List<Reservation>> afterTimeR: reservationsPerDay.get(day).entrySet()) {
-//                      Si el pase del visitante es de tipo HalfDay y son desp de las 14 no lo puedo reubicar
+                        }else{ // Si no me entran, trato de reubicar
+                            for (Map.Entry<ParkLocalTime, List<Reservation>> afterTimeR: entrySet) {
                                 ParkLocalTime afterTime = afterTimeR.getKey();
                                 if(passType == Models.PassTypeEnum.HALFDAY && checkHalfDayPass(afterTime)) {
+                                    // Si tenia pase HALFDAY y me pase de la hora permitida, salgo
                                     break;
                                 }
-//                      Se deberán intentar todos los slots posteriores al de la reserva original.
+                                // Solo intento slots posteriores al de la reserva original.
                                 if(afterTime.isAfter(reservationTime)){
                                     List<Reservation> afterReservations = afterTimeR.getValue();
-//                          La puedo reubicar en caso de que no haya reservas aceptadas o pendientes que superen la capacidad
+                                    // Si tengo capacidad la reubico
                                     if(afterReservations.size() < capacity - 1){
                                         r.relocate();
                                         afterReservations.add(r);
@@ -206,25 +203,32 @@ public class RideRepository {
                                 }
                             }
                         }
-//                    Si sigue pendiente es porque no la pude reubicar => cancelo
+                        // Si sigue pendiente es porque no la pude reubicar => cancelo
                         if(r.getState() == ReservationState.PENDING){
                             r.cancel();
-                            cancelledReservations.add(r);
+                            ride.addCancelledReservations(r);
                             reservationList.remove(r);
-                            cancelled+=1;
+                            cancelledAmount +=1;
                         }
                     }
-                    i++;
                 }
             }
-            ride.setCancelledReservations(cancelledReservations);
         }
 
 
-
-        return AdminParkServiceOuterClass.SlotCapacityResponse.newBuilder()
-                .setAcceptedAmount(accepted).setCancelledAmount(cancelled).setRelocatedAmount(relocated)
+        AdminParkServiceOuterClass.SlotCapacityResponse response = AdminParkServiceOuterClass.SlotCapacityResponse.newBuilder()
+                .setAcceptedAmount(acceptedAmount).setCancelledAmount(cancelledAmount).setRelocatedAmount(relocatedAmount)
                 .build();
+
+        cleanAmounts();
+        return response;
+    }
+
+
+    private void cleanAmounts(){
+        this.acceptedAmount = 0;
+        this.relocatedAmount = 0;
+        this.cancelledAmount = 0;
     }
     private Ride getRide(String name) {
         if(!rideExists(name))

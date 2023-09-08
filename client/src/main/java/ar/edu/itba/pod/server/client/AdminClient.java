@@ -75,7 +75,7 @@ public class AdminClient {
                             couldNotAdd++;
                         }
                     } catch (Exception e) {
-                        System.out.println("There was an exception adding ride " + rideName + '.');
+                        couldNotAdd++;
                     }
                 }
             }else{
