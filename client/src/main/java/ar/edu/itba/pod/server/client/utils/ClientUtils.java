@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
@@ -27,6 +26,7 @@ public final class ClientUtils {
     public final static String VISITOR = "visitor";
     public final static String PASS_TYPE = "passType";
     public final static String CAPACITY = "capacity";
+    public final static String OUTPATH = "outPath";
 
     public static <T> Optional<T> getProperty(String name, Supplier<String> errorMsg, Function<String, T> converter){
         final String prop = System.getProperty(name);
@@ -50,6 +50,7 @@ public final class ClientUtils {
                 .build();
     }
 
+    //TODO: manejar errores?
     public static Map<String, String> parseArguments(String[] args) {
         Map<String, String> argMap = new HashMap<>();
         for (String arg : args) {
