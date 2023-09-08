@@ -39,9 +39,9 @@ public class RideRepository {
     }
 
     private void checkValidSlot(RideTime rideTime, int slotTime){
-        long minutes = rideTime.getClose().until(rideTime.getOpen(), ChronoUnit.MINUTES) / slotTime;
-        if(minutes == Math.floor(minutes)){
-            throw new SlotCapacityException("Slot is not possible, between " + rideTime.getOpen() + " and " + rideTime.getClose());
+        long open_minutes = rideTime.getClose().until(rideTime.getOpen(), ChronoUnit.MINUTES);
+        if(open_minutes < slotTime){
+            throw new SlotCapacityException("Slot of " + slotTime + " minutes is not possible, between " + rideTime.getOpen() + " and " + rideTime.getClose());
         }
     }
 

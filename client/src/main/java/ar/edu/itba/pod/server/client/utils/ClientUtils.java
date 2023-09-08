@@ -28,20 +28,16 @@ public final class ClientUtils {
     public final static String PASS_TYPE = "passType";
     public final static String CAPACITY = "capacity";
 
-    public static <T> Optional<T> getProperty(String name, Supplier<String> errorMsg, Function<String, T> converter){
-        final String prop = System.getProperty(name);
-        if(prop == null){
-            final String msg = errorMsg.get();
-            logger.error(msg);
+    public static <T> Optional<T> getProperty(String name, Supplier<String> errorSupplier, Function<String, T> converter){
+        try (LoggerContext context = new LoggerContext(name, errorSupplier)) {
+            final String prop = System.getProperty(name);
+            if (prop == null) {
+                return Optional.empty();
+            }
+            return Optional.of(converter.apply(prop));
+        } catch (ClassCastException e) {
             return Optional.empty();
         }
-        try {
-            return Optional.of(converter.apply(prop));
-        }catch (ClassCastException e){
-            logger.error("Cannot convert " + prop + " for " + name);
-            System.out.println("Invalid argument " + prop + " for " + name);
-        }
-        return Optional.empty();
     }
 
     public static ManagedChannel buildChannel(String serverAddress){
@@ -75,4 +71,22 @@ public final class ClientUtils {
         }
     }
 
+    private static class LoggerContext implements AutoCloseable {
+        private final String propertyName;
+        private final Supplier<String> errorSupplier;
+
+        public LoggerContext(String propertyName, Supplier<String> errorSupplier) {
+            this.propertyName = propertyName;
+            this.errorSupplier = errorSupplier;
+            logger.error(errorSupplier.get());
+        }
+
+        @Override
+        public void close() {
+            logger.error("Cannot convert property for " + propertyName);
+            System.out.println("Invalid argument for " + propertyName);
+        }
+    }
+
 }
+
