@@ -23,7 +23,7 @@ public class QueryClient {
 
         Map<String, String> argMap = parseArguments(args);
         final String serverAddress = getArgumentValue(argMap, "serverAddress");
-        final String action = getArgumentValue(argMap, "action");;
+        final String action = getArgumentValue(argMap, "action");
         final String day = getArgumentValue(argMap, "day");
         final String outPath = getArgumentValue(argMap, "outPath");
 

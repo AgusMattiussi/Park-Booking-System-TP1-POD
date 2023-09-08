@@ -17,28 +17,6 @@ import java.util.function.Supplier;
 
 public final class ClientUtils {
     private final static Logger logger = LoggerFactory.getLogger(ClientUtils.class);
-    public final static String SERVER_ADDRESS = "serverAddress";
-    public final static String ACTION_NAME = "action";
-    public final static String RIDE_NAME = "rideName";
-    public final static String OPEN_TIME = "openTime";
-    public final static String CLOSE_TIME = "closeTime";
-    public final static String SLOT_MINUTES = "slotMinutes";
-    public final static String DAY = "day";
-    public final static String VISITOR = "visitor";
-    public final static String PASS_TYPE = "passType";
-    public final static String CAPACITY = "capacity";
-
-    public static <T> Optional<T> getProperty(String name, Supplier<String> errorSupplier, Function<String, T> converter){
-        try (LoggerContext context = new LoggerContext(name, errorSupplier)) {
-            final String prop = System.getProperty(name);
-            if (prop == null) {
-                return Optional.empty();
-            }
-            return Optional.of(converter.apply(prop));
-        } catch (ClassCastException e) {
-            return Optional.empty();
-        }
-    }
 
     public static ManagedChannel buildChannel(String serverAddress){
         return ManagedChannelBuilder.forTarget(serverAddress)
@@ -71,22 +49,6 @@ public final class ClientUtils {
         }
     }
 
-    private static class LoggerContext implements AutoCloseable {
-        private final String propertyName;
-        private final Supplier<String> errorSupplier;
-
-        public LoggerContext(String propertyName, Supplier<String> errorSupplier) {
-            this.propertyName = propertyName;
-            this.errorSupplier = errorSupplier;
-            logger.error(errorSupplier.get());
-        }
-
-        @Override
-        public void close() {
-            logger.error("Cannot convert property for " + propertyName);
-            System.out.println("Invalid argument for " + propertyName);
-        }
-    }
 
 }
 
