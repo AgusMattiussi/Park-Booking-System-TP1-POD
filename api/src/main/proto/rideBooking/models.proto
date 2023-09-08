@@ -25,3 +25,8 @@ enum ReservationState {
   ACCEPTED=3;
   RELOCATED=4;
 }
+
+enum SimpleStatusResponse {
+  OK=0;
+  ERROR=1;
+}

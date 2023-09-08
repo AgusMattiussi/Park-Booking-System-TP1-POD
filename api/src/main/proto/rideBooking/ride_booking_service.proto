@@ -2,6 +2,7 @@ syntax = "proto3";
 
  import "google/protobuf/wrappers.proto";
  import "google/protobuf/empty.proto";
+ import "rideBooking/models.proto";
 
  package rideBooking;
 
@@ -64,7 +65,7 @@ message BookRideRequest {
 }
 
 message BookRideResponse {
-  google.protobuf.StringValue response = 1;
+  SimpleStatusResponse status = 1;
 }
 
 

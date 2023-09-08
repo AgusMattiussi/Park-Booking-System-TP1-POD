@@ -17,6 +17,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import rideBooking.Models;
 import rideBooking.RideBookingServiceGrpc;
 import rideBooking.RideBookingServiceOuterClass.*;
 
@@ -106,7 +107,11 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
         UUID visitorId = UUID.fromString(request.getVisitorId().getValue());
 
         //TODO: ver que onda throws
+        //TODO: Cambiar a boolean?
         rideRepository.confirmBooking(rideName, dayOfTheYear, timeSlot, visitorId);
+
+        responseObserver.onNext(BookRideResponse.newBuilder().setStatus(Models.SimpleStatusResponse.OK).build());
+        responseObserver.onCompleted();
     }
 
     // TODO: Falta response
@@ -125,7 +130,10 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
         UUID visitorId = UUID.fromString(request.getVisitorId().getValue());
 
         //TODO: ver que onda throws
+        //TODO: Cambiar a boolean?
         rideRepository.cancelBooking(rideName, dayOfTheYear, timeSlot, visitorId);
+        responseObserver.onNext(BookRideResponse.newBuilder().setStatus(Models.SimpleStatusResponse.OK).build());
+        responseObserver.onCompleted();
     }
 
     private LocalTime parseTime(String time) {
