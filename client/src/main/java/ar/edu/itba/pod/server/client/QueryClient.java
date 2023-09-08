@@ -1,5 +1,6 @@
 package ar.edu.itba.pod.server.client;
 
+import ar.edu.itba.pod.server.client.utils.ClientUtils;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import io.grpc.ManagedChannel;
@@ -22,10 +23,11 @@ public class QueryClient {
         logger.info("Query Client Starting ...");
 
         Map<String, String> argMap = parseArguments(args);
-        final String serverAddress = getArgumentValue(argMap, "serverAddress");
-        final String action = getArgumentValue(argMap, "action");;
-        final String day = getArgumentValue(argMap, "day");
-        final String outPath = getArgumentValue(argMap, "outPath");
+
+        final String serverAddress = getArgumentValue(argMap, SERVER_ADDRESS);
+        final String action = getArgumentValue(argMap, ACTION_NAME);;
+        final String day = getArgumentValue(argMap, DAY);
+        final String outPath = getArgumentValue(argMap, OUTPATH);
 
         ManagedChannel channel = buildChannel(serverAddress);
 
@@ -69,8 +71,8 @@ public class QueryClient {
                             .build());
 
                     generateConfirmedQueryFileContent(list, outPath);
-
                 }
+                default -> logger.error("Invalid action");
             }
         } catch (RuntimeException e) {
             System.err.println(e.getMessage());

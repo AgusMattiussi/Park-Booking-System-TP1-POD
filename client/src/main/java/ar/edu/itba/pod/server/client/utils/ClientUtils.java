@@ -6,17 +6,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
 public final class ClientUtils {
     private final static Logger logger = LoggerFactory.getLogger(ClientUtils.class);
+
     public final static String SERVER_ADDRESS = "serverAddress";
     public final static String ACTION_NAME = "action";
     public final static String RIDE_NAME = "rideName";
@@ -24,21 +20,11 @@ public final class ClientUtils {
     public final static String CLOSE_TIME = "closeTime";
     public final static String SLOT_MINUTES = "slotMinutes";
     public final static String DAY = "day";
-    public final static String VISITOR = "visitor";
+    public final static String VISITOR_ID = "visitorId";
     public final static String PASS_TYPE = "passType";
     public final static String CAPACITY = "capacity";
+    public final static String OUTPATH = "outPath";
 
-    public static <T> Optional<T> getProperty(String name, Supplier<String> errorSupplier, Function<String, T> converter){
-        try (LoggerContext context = new LoggerContext(name, errorSupplier)) {
-            final String prop = System.getProperty(name);
-            if (prop == null) {
-                return Optional.empty();
-            }
-            return Optional.of(converter.apply(prop));
-        } catch (ClassCastException e) {
-            return Optional.empty();
-        }
-    }
 
     public static ManagedChannel buildChannel(String serverAddress){
         return ManagedChannelBuilder.forTarget(serverAddress)
@@ -46,6 +32,7 @@ public final class ClientUtils {
                 .build();
     }
 
+    //TODO: manejar errores?
     public static Map<String, String> parseArguments(String[] args) {
         Map<String, String> argMap = new HashMap<>();
         for (String arg : args) {
@@ -71,22 +58,6 @@ public final class ClientUtils {
         }
     }
 
-    private static class LoggerContext implements AutoCloseable {
-        private final String propertyName;
-        private final Supplier<String> errorSupplier;
-
-        public LoggerContext(String propertyName, Supplier<String> errorSupplier) {
-            this.propertyName = propertyName;
-            this.errorSupplier = errorSupplier;
-            logger.error(errorSupplier.get());
-        }
-
-        @Override
-        public void close() {
-            logger.error("Cannot convert property for " + propertyName);
-            System.out.println("Invalid argument for " + propertyName);
-        }
-    }
 
 }
 
