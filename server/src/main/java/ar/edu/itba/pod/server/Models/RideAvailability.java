@@ -4,10 +4,10 @@ import java.time.LocalTime;
 import java.util.Objects;
 
 public class RideAvailability implements Comparable<RideAvailability> {
-    private LocalTime timeSlot;
-    private int pendingBookingsCount;
-    private int confirmedBookingsCount;
-    private int rideCapacity;
+    private final LocalTime timeSlot;
+    private final int pendingBookingsCount;
+    private final int confirmedBookingsCount;
+    private final int rideCapacity;
 
     public RideAvailability(LocalTime timeSlot, int pendingBookingsCount, int confirmedBookingsCount, int rideCapacity) {
         this.timeSlot = timeSlot;
@@ -26,6 +26,10 @@ public class RideAvailability implements Comparable<RideAvailability> {
 
     public int getConfirmedBookingsCount() {
         return confirmedBookingsCount;
+    }
+
+    public int getRideCapacity() {
+        return rideCapacity;
     }
 
     @Override

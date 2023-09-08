@@ -1,8 +1,10 @@
 package ar.edu.itba.pod.server.server;
 
 import ar.edu.itba.pod.server.Models.Ride;
+import ar.edu.itba.pod.server.Models.RideAvailability;
 import ar.edu.itba.pod.server.persistance.RideRepository;
 import com.google.protobuf.Empty;
+import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
@@ -13,12 +15,11 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import rideBooking.Models;
 import rideBooking.RideBookingServiceGrpc;
+import rideBooking.RideBookingServiceOuterClass;
 import rideBooking.RideBookingServiceOuterClass.*;
 
 //TODO: Para no repetir codigo, podria cambiar los parametros de RideRepository para recibir Reservation y crearla afuera
@@ -37,12 +38,12 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
         responseObserver.onCompleted();
     }
 
-    // TODO: Falta response
     @Override
     public void getRideAvailability(GetRideAvailabilityRequest request, StreamObserver<GetRideAvailabilityResponse> responseObserver) {
-        LocalTime startTimeSlot, endTimeSlot;
-        String rideName;
-        int dayOfTheYear;
+        LocalTime startTimeSlot = null;
+        LocalTime endTimeSlot = null;
+        String rideName = null;
+        int dayOfTheYear = 0;
 
 
         try {
@@ -67,10 +68,41 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
 
         dayOfTheYear = Integer.parseInt(request.getDayOfYear().getValue());
 
+        // TODO: Este condicional puede no ser suficiente si estan mal los parametros
+        Map<String, Map<LocalTime, RideAvailability>> ridesAvailability = new HashMap<>();
+        if(rideName != null){
+            if(endTimeSlot != null)
+                ridesAvailability = rideRepository.getRidesAvailability(rideName, startTimeSlot, endTimeSlot, dayOfTheYear);
+            else
+                ridesAvailability = rideRepository.getRidesAvailability(rideName, startTimeSlot, dayOfTheYear);
+        } else {
+            ridesAvailability = rideRepository.getRidesAvailability(startTimeSlot, endTimeSlot, dayOfTheYear);
+        }
 
+        GetRideAvailabilityResponse.Builder responseBuilder = GetRideAvailabilityResponse.newBuilder();
+
+        ridesAvailability.forEach((ride, availability) -> {
+            RideBookingServiceOuterClass.RideAvailability.Builder rideAvailabilityBuilder =
+                    RideBookingServiceOuterClass.RideAvailability.newBuilder().setRideName(StringValue.of(ride));
+
+            availability.forEach((time, rideAvailability) -> {
+
+               TimeSlotAvailability timeSlotAvailability = TimeSlotAvailability.newBuilder()
+                       .setTimeSlot(StringValue.of(time.toString()))
+                       .setConfirmedBookings(Int32Value.of(rideAvailability.getConfirmedBookingsCount()))
+                       .setPendingBookings(Int32Value.of(rideAvailability.getPendingBookingsCount()))
+                       .setRideCapacity(Int32Value.of(rideAvailability.getRideCapacity()))
+                       .build();
+
+               rideAvailabilityBuilder.addTimeSlotAvailability(timeSlotAvailability);
+            });
+            responseBuilder.addRideAvailability(rideAvailabilityBuilder.build());
+        });
+
+        responseObserver.onNext(responseBuilder.build());
+        responseObserver.onCompleted();
     }
 
-    // TODO: Falta response
     @Override
     public void bookRide(BookRideRequest request, StreamObserver<BookRideResponse> responseObserver) {
         //TODO: Validar parametros de entrada?
@@ -96,7 +128,6 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
         responseObserver.onCompleted();
     }
 
-    // TODO: Falta response
     @Override
     public void confirmBooking(BookRideRequest request, StreamObserver<BookRideResponse> responseObserver) {
         LocalTime timeSlot;
@@ -119,7 +150,6 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
         responseObserver.onCompleted();
     }
 
-    // TODO: Falta response
     @Override
     public void cancelBooking(BookRideRequest request, StreamObserver<BookRideResponse> responseObserver) {
         LocalTime timeSlot;
