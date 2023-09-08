@@ -20,7 +20,7 @@ public final class ClientUtils {
     public final static String RIDE_NAME = "ride";
     public final static String OPEN_TIME = "openTime";
     public final static String CLOSE_TIME = "closeTime";
-    public final static String SLOT_MINUTES = "slotMinutes";
+    public final static String SLOT_MINUTES = "slotGap";
     public final static String DAY = "day";
     public final static String VISITOR_ID = "visitorId";
     public final static String PASS_TYPE = "passType";
