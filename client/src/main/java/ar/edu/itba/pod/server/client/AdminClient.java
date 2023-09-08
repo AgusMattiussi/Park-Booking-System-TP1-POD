@@ -26,7 +26,7 @@ import static ar.edu.itba.pod.server.client.utils.ClientUtils.*;
 public class AdminClient {
     private static final Logger logger = LoggerFactory.getLogger(AdminClient.class);
 
-//     ./admin-cli -DserverAddress=10.6.0.1:50051 -Daction=rides/tickets/slots -Dride=ride -DopenTime=00:00 -DcloseTime 23:59 -DslotGap=15 -Dday=100 -DvisitorId=1 -DpassType=2 -Dcapacity=20 -DinPath="excel.csv"
+//     ./admin-cli -DserverAddress=10.6.0.1:50051 -Daction=rides/tickets/slots -Dride=ride -Dday=100 -Dcapacity=20 -DinPath="excel.csv"
 
     public static void main(String[] args) throws InterruptedException {
         logger.info("Admin Client Starting ...");
