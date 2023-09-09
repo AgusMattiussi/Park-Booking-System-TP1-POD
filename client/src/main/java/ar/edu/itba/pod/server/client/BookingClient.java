@@ -85,6 +85,7 @@ public class BookingClient {
                         latch.countDown();
                         System.out.println(throwable.getMessage());
                     }
+                    
                 }, Runnable::run);
 
             }
