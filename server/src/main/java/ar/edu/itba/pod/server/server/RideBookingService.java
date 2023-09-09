@@ -68,10 +68,8 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
     public void bookRide(BookRideRequest request, StreamObserver<BookRideResponse> responseObserver) {
         BookRideRequestModel requestModel = BookRideRequestModel.fromBookRideRequest(request);
 
-        boolean result = rideRepository.bookRide(requestModel.getRideName(), requestModel.getDay(),
+        Models.ReservationState status = rideRepository.bookRide(requestModel.getRideName(), requestModel.getDay(),
                 requestModel.getTimeSlot(), requestModel.getVisitorId());
-
-        Models.SimpleStatusResponse status = result ? Models.SimpleStatusResponse.OK : Models.SimpleStatusResponse.ERROR;
 
         responseObserver.onNext(BookRideResponse.newBuilder().setStatus(status).build());
         responseObserver.onCompleted();
@@ -85,7 +83,7 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
         rideRepository.confirmBooking(requestModel.getRideName(), requestModel.getDay(), requestModel.getTimeSlot(),
                 requestModel.getVisitorId());
 
-        responseObserver.onNext(BookRideResponse.newBuilder().setStatus(Models.SimpleStatusResponse.OK).build());
+        responseObserver.onNext(BookRideResponse.newBuilder().setStatus(Models.ReservationState.CONFIRMED).build());
         responseObserver.onCompleted();
     }
 
@@ -97,7 +95,7 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
         rideRepository.cancelBooking(requestModel.getRideName(), requestModel.getDay(), requestModel.getTimeSlot(),
                 requestModel.getVisitorId());
 
-        responseObserver.onNext(BookRideResponse.newBuilder().setStatus(Models.SimpleStatusResponse.OK).build());
+        responseObserver.onNext(BookRideResponse.newBuilder().setStatus(Models.ReservationState.CANCELLED).build());
         responseObserver.onCompleted();
     }
 

@@ -39,7 +39,7 @@ public class Reservation implements Comparable<Reservation> {
     }
 
     public void confirm(){
-        setState(ReservationState.ACCEPTED);
+        setState(ReservationState.CONFIRMED);
     }
 
     public void relocate(){
@@ -51,7 +51,7 @@ public class Reservation implements Comparable<Reservation> {
     }
 
     public boolean isConfirmed(){
-        return this.state == ReservationState.ACCEPTED;
+        return this.state == ReservationState.CONFIRMED;
     }
 
     @Override

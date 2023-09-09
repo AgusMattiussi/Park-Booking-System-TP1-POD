@@ -35,10 +35,10 @@ public class RideRepository {
         this.notifications = new ConcurrentHashMap<>();
 
         //TODO: Borrar
-        //rides.put("Space Mountain", new Ride("Space Mountain", new RideTime(ParkLocalTime.fromString("10:00"), ParkLocalTime.fromString("18:00")), 15));
-        //rides.put("Splash Mountain", new Ride("Splash Mountain", new RideTime(ParkLocalTime.fromString("10:00"), ParkLocalTime.fromString("16:00")), 15));
-        //rides.put("It's a Small World", new Ride("It's a Small World", new RideTime(ParkLocalTime.fromString("09:00"), ParkLocalTime.fromString("19:00")), 20));
-        //addParkPass(UUID.fromString("7727e3b9-a2d8-46fe-b581-0c63e8739694"), Models.PassTypeEnum.UNLIMITED, 22);
+//        rides.put("Space Mountain", new Ride("Space Mountain", new RideTime(ParkLocalTime.fromString("10:00"), ParkLocalTime.fromString("18:00")), 15));
+//        rides.put("Splash Mountain", new Ride("Splash Mountain", new RideTime(ParkLocalTime.fromString("10:00"), ParkLocalTime.fromString("16:00")), 15));
+//        rides.put("It's a Small World", new Ride("It's a Small World", new RideTime(ParkLocalTime.fromString("09:00"), ParkLocalTime.fromString("19:00")), 20));
+//        addParkPass(UUID.fromString("7727e3b9-a2d8-46fe-b581-0c63e8739694"), Models.PassTypeEnum.UNLIMITED, 22);
     }
 
     public static RideRepository getInstance() {
@@ -294,26 +294,26 @@ public class RideRepository {
      *
      */
     // TODO: Mover excepciones al Service?
-    public boolean bookRide(String rideName, int dayOfTheYear, ParkLocalTime timeSlot, UUID visitorId) {
+    public ReservationState bookRide(String rideName, int dayOfTheYear, ParkLocalTime timeSlot, UUID visitorId) {
         Ride ride = getRide(rideName);
         validateRideTimeAndAccess(ride, dayOfTheYear, timeSlot, visitorId);
         
         ConcurrentSkipListSet<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
 
-        ReservationState state = ride.isSlotCapacitySet(dayOfTheYear) ? ReservationState.PENDING : ReservationState.ACCEPTED;
+        ReservationState state = ride.isSlotCapacitySet(dayOfTheYear) ? ReservationState.CONFIRMED : ReservationState.PENDING;
         Reservation reservation = new Reservation(visitorId, state, dayOfTheYear, timeSlot);
 
         if(reservations.contains(reservation))
             throw new AlreadyExistsException(String.format("Visitor '%s' already booked a ticket for '%s' at time slot '%s'", visitorId, rideName, timeSlot));
 
-        //TODO: Podria hacer 'putIfAbsent' y chequear por false afuera
-        return reservations.add(reservation);
+        reservations.add(reservation);
+        return state;
     }
 
     private Optional<Reservation> getReservation(String rideName, int dayOfTheYear, ParkLocalTime timeSlot, UUID visitorId){
         ConcurrentSkipListSet<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
         if(!reservations.isEmpty()) {
-            Reservation toFind = new Reservation(visitorId, ReservationState.UNKNOWN_0, dayOfTheYear, timeSlot);
+            Reservation toFind = new Reservation(visitorId, ReservationState.UNKNOWN_STATE, dayOfTheYear, timeSlot);
 
             for (Reservation r : reservations) {
                 if (r.equals(toFind))
@@ -371,7 +371,7 @@ public class RideRepository {
         validateRideTimeAndAccess(ride, dayOfTheYear, timeSlot, visitorId);
 
         ConcurrentSkipListSet<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
-        Reservation toRemove = new Reservation(visitorId, ReservationState.UNKNOWN_0, dayOfTheYear, timeSlot);
+        Reservation toRemove = new Reservation(visitorId, ReservationState.UNKNOWN_STATE, dayOfTheYear, timeSlot);
 
         if(!reservations.remove(toRemove))
             throw new ReservationNotFoundException(String.format(

@@ -86,7 +86,7 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
                 .orElse(0);
     }
     public int getConfirmedCountForTimeSlot(int day, ParkLocalTime timeSlot) {
-        return countStateForTimeSlot(day, timeSlot, ReservationState.ACCEPTED);
+        return countStateForTimeSlot(day, timeSlot, ReservationState.CONFIRMED);
     }
 
     public int getPendingCountForTimeSlot(int day, ParkLocalTime timeSlot) {

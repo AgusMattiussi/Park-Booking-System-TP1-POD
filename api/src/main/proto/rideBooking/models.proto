@@ -19,10 +19,10 @@ enum PassTypeEnum{
 
 
 enum ReservationState {
-  UNKNOWN_0 = 0;
+  UNKNOWN_STATE = 0;
   CANCELLED=1;
   PENDING=2;
-  ACCEPTED=3;
+  CONFIRMED=3;
   RELOCATED=4;
 }
 
