@@ -26,6 +26,8 @@ public final class ClientUtils {
     public final static String PASS_TYPE = "passType";
     public final static String CAPACITY = "capacity";
     public final static String OUTPATH = "outPath";
+    public static final String BOOKING_SLOT = "bookingSlot";
+    public static final String BOOKING_SLOT_TO = "bookingSlotTo";
 
 
     public static ManagedChannel buildChannel(String serverAddress){
