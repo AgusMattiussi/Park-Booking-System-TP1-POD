@@ -40,7 +40,6 @@ public class BookingClient {
         //TODO: Validar parametros no null
         final String serverAddress = argMap.get(ClientUtils.SERVER_ADDRESS);
         final String action = argMap.get(ClientUtils.ACTION_NAME);;
-        final String day = argMap.get(ClientUtils.DAY);
         final String outPath = argMap.get(ClientUtils.OUTPATH);
 
         System.out.println("Input parameters:");
@@ -85,18 +84,22 @@ public class BookingClient {
                         latch.countDown();
                         System.out.println(throwable.getMessage());
                     }
-                    
+
                 }, Runnable::run);
 
             }
             case "availability" -> {
-                String rideName = argMap.get(ClientUtils.RIDE_NAME);
+                final String rideName = argMap.get(ClientUtils.RIDE_NAME);
+                final String day = argMap.get(ClientUtils.DAY);
+                final String bookingSlot = argMap.get(ClientUtils.BOOKING_SLOT);
+                final String bookingSlotTo = argMap.get(ClientUtils.BOOKING_SLOT_TO);
+
                 ListenableFuture<RideBookingServiceOuterClass.GetRideAvailabilityResponse> result = stub.getRideAvailability(
                                 RideBookingServiceOuterClass.GetRideAvailabilityRequest.newBuilder()
-                                .setDayOfYear(StringValue.of(argMap.get(ClientUtils.DAY)))
-                                //.setRideName(rideName == null ? StringValue.of("") : StringValue.of(rideName))
-                                .setStartTimeSlot(StringValue.of(argMap.get(ClientUtils.BOOKING_SLOT)))
-                                .setEndTimeSlot(StringValue.of(argMap.get(ClientUtils.BOOKING_SLOT_TO)))
+                                .setDayOfYear(StringValue.of(day))
+                                //.setRideName(rideName)
+                                .setStartTimeSlot(StringValue.of(bookingSlot))
+                                .setEndTimeSlot(StringValue.of(bookingSlotTo))
                                 .build());
 
                 Futures.addCallback(result, new FutureCallback<>() {
@@ -116,6 +119,36 @@ public class BookingClient {
                         });
 
                         latch.countDown();
+                    }
+
+                    @Override
+                    public void onFailure(Throwable throwable) {
+                        System.out.println("Error\n");
+                        latch.countDown();
+                        System.out.println(throwable.getMessage());
+                    }
+                }, Runnable::run);
+            }
+            case "book" -> {
+                final String rideName = argMap.get(ClientUtils.RIDE_NAME);
+                final String day = argMap.get(ClientUtils.DAY);
+                final String bookingSlot = argMap.get(ClientUtils.BOOKING_SLOT);
+                final String visitorId = argMap.get(ClientUtils.VISITOR_ID);
+
+                ListenableFuture<RideBookingServiceOuterClass.BookRideResponse> result = stub.bookRide(
+                        RideBookingServiceOuterClass.BookRideRequest.newBuilder()
+                                .setRideName(StringValue.of(rideName))
+                                .setDayOfYear(StringValue.of(day))
+                                .setTimeSlot(StringValue.of(bookingSlot))
+                                .setVisitorId(StringValue.of(visitorId))
+                                .build());
+
+                Futures.addCallback(result, new FutureCallback<>() {
+                    @Override
+                    public void onSuccess(RideBookingServiceOuterClass.BookRideResponse bookRideResponse) {
+                        System.out.println("Success!\n");
+                        System.out.printf("The reservation for %s at %s on the day %s is %s\n",
+                                rideName, bookingSlot, day, bookRideResponse.getStatus());
                     }
 
                     @Override

@@ -111,6 +111,8 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
 
 
     public boolean isSlotValid(int day, ParkLocalTime time) {
+        //return true;
+        //TODO: Descomentar
         return slotsPerDay.containsKey(day) && slotsPerDay.get(day).containsKey(time);
     }
 

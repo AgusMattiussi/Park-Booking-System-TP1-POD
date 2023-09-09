@@ -30,15 +30,15 @@ public class RideRepository {
 
     private RideRepository() {
         this.rides = new ConcurrentHashMap<>();
-
-        //TODO: Borrar
-        rides.put("Space Mountain", new Ride("Space Mountain", new RideTime(ParkLocalTime.fromString("10:00"), ParkLocalTime.fromString("18:00")), 15));
-        rides.put("Splash Mountain", new Ride("Splash Mountain", new RideTime(ParkLocalTime.fromString("10:00"), ParkLocalTime.fromString("16:00")), 15));
-        rides.put("It's a Small World", new Ride("It's a Small World", new RideTime(ParkLocalTime.fromString("09:00"), ParkLocalTime.fromString("19:00")), 20));
-
         this.parkPasses = new ConcurrentHashMap<>();
         this.bookedRides = new ConcurrentHashMap<>();
         this.notifications = new ConcurrentHashMap<>();
+
+        //TODO: Borrar
+        //rides.put("Space Mountain", new Ride("Space Mountain", new RideTime(ParkLocalTime.fromString("10:00"), ParkLocalTime.fromString("18:00")), 15));
+        //rides.put("Splash Mountain", new Ride("Splash Mountain", new RideTime(ParkLocalTime.fromString("10:00"), ParkLocalTime.fromString("16:00")), 15));
+        //rides.put("It's a Small World", new Ride("It's a Small World", new RideTime(ParkLocalTime.fromString("09:00"), ParkLocalTime.fromString("19:00")), 20));
+        //addParkPass(UUID.fromString("7727e3b9-a2d8-46fe-b581-0c63e8739694"), Models.PassTypeEnum.UNLIMITED, 22);
     }
 
     public static RideRepository getInstance() {
@@ -250,7 +250,6 @@ public class RideRepository {
 
     private void validateRideTimeAndAccess(Ride ride, int dayOfTheYear, ParkLocalTime timeSlot, UUID visitorId){
         validateRideTimeSlot(ride, dayOfTheYear, timeSlot);
-
         if(!hasValidPass(visitorId, dayOfTheYear))
             throw new PassNotFoundException(String.format("No valid pass for day %s", dayOfTheYear));
     }
