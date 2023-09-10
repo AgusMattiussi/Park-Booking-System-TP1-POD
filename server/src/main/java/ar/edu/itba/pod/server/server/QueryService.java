@@ -20,37 +20,13 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
 
     @Override
     public void queryCapacitySuggestion(QueryServiceOuterClass.QueryDayRequest request, StreamObserver<QueryServiceOuterClass.CapacitySuggestionResponse> responseObserver) {
-        if(request.getDayOfYear().getValue() < 1 || request.getDayOfYear().getValue() > 365) {
-            throw new InvalidTimeException("Invalid day of year");
+        int day = request.getDayOfYear().getValue();
+
+        if(day < 1 || day > 365) {
+            throw new InvalidTimeException("Day must be between 1 and 365");
         }
 
-        logger.error("Capacity Suggestion Query\n");
-        logger.error("Slot | Capacity | Ride\n");
-
-        // TODO: pasar esta logica a RideRepository?
-        Map<String, Ride> rides = repository.getRides();
-        List<CapacitySuggestion> responseList = new LinkedList<>();
-
-        rides.values().forEach(ride -> {
-            //TODO: ride.getSlotCapacity() == null
-            if(true) {
-                String rideName = ride.getName();
-
-                Map<Integer, Map<ParkLocalTime, List<Reservation>>> reservations = ride.getReservationsPerDay();
-                int pendingBookings = 0;
-
-                for (Map.Entry<ParkLocalTime, List<Reservation>> entry : reservations.get(request.getDayOfYear().getValue()).entrySet()) {
-                    ParkLocalTime slot = entry.getKey();
-                    for (Reservation reservation : entry.getValue()) {
-                        if (reservation.getState() == ReservationState.PENDING) {
-                            pendingBookings++;
-                        }
-                    }
-                    responseList.add(new CapacitySuggestion(rideName, pendingBookings, slot.toString()));
-                }
-            }
-        });
-        responseList.sort(Comparator.comparingInt(CapacitySuggestion::getSuggestedCapacity).reversed());
+        List<CapacitySuggestion> responseList = getCapacitySuggestionList(day);
 
         CapacitySuggestionResponse.Builder responseBuilder = CapacitySuggestionResponse.newBuilder();
 
@@ -63,35 +39,43 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
         responseObserver.onCompleted();
     }
 
-    @Override
-    public void queryConfirmedBookings(QueryServiceOuterClass.QueryDayRequest request, StreamObserver<QueryServiceOuterClass.ConfirmedBookingsResponse> responseObserver) {
-        if(request.getDayOfYear().getValue() < 1 || request.getDayOfYear().getValue() > 365) {
-            throw new InvalidTimeException("Invalid day of year");
-        }
-
-        logger.error("Confirmed Bookings Query\n");
-        logger.error("Slot | Visitor | Ride\n");
-
-        // TODO: pasar esta logica a RideRepository?
+    private List<CapacitySuggestion> getCapacitySuggestionList(int day){
         Map<String, Ride> rides = repository.getRides();
-        List<ConfirmedBookings> responseList = new LinkedList<>();
+        List<CapacitySuggestion> responseList = new LinkedList<>();
 
         rides.values().forEach(ride -> {
-            String rideName = ride.getName();
+            if(ride.getSlotCapacityPerDay(day) != null) {
+                String rideName = ride.getName();
 
-            Map<Integer, Map<ParkLocalTime, List<Reservation>>> reservations = ride.getReservationsPerDay();
+                Map<Integer, Map<ParkLocalTime, List<Reservation>>> reservations = ride.getReservationsPerDay();
+                int pendingBookings = 0;
 
-            for (Map.Entry<ParkLocalTime, List<Reservation>> entry : reservations.get(request.getDayOfYear().getValue()).entrySet()) {
-                ParkLocalTime slot = entry.getKey();
-                for (Reservation reservation : entry.getValue()) {
-                    if(reservation.getState() == ReservationState.CONFIRMED){
-                        responseList.add(new ConfirmedBookings(rideName, reservation.getVisitorId().toString(), slot.toString()));
+                for (Map.Entry<ParkLocalTime, List<Reservation>> entry : reservations.get(day).entrySet()) {
+                    ParkLocalTime slot = entry.getKey();
+                    for (Reservation reservation : entry.getValue()) {
+                        if (reservation.getState() == ReservationState.PENDING) {
+                            pendingBookings++;
+                        }
                     }
+                    responseList.add(new CapacitySuggestion(rideName, pendingBookings, slot.toString()));
                 }
             }
         });
+        responseList.sort(Comparator.comparingInt(CapacitySuggestion::getSuggestedCapacity).reversed()
+                .thenComparing(CapacitySuggestion::getRideName));
 
-        responseList.sort(Comparator.comparing(ConfirmedBookings::getSlot));
+        return responseList;
+    }
+
+    @Override
+    public void queryConfirmedBookings(QueryServiceOuterClass.QueryDayRequest request, StreamObserver<QueryServiceOuterClass.ConfirmedBookingsResponse> responseObserver) {
+        int day = request.getDayOfYear().getValue();
+
+        if(day < 1 || day > 365) {
+            throw new IllegalArgumentException("Day must be between 1 and 365");
+        }
+
+        List<ConfirmedBookings> responseList = getConfirmedBookingsList(day);
 
         ConfirmedBookingsResponse.Builder responseBuilder = ConfirmedBookingsResponse.newBuilder();
 
@@ -103,5 +87,30 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
 
         responseObserver.onNext(response);
         responseObserver.onCompleted();
+    }
+
+    private List<ConfirmedBookings> getConfirmedBookingsList(int day){
+        Map<String, Ride> rides = repository.getRides();
+        List<ConfirmedBookings> confirmedBookings = new LinkedList<>();
+
+        rides.values().forEach(ride -> {
+            String rideName = ride.getName();
+
+            Map<Integer, Map<ParkLocalTime, List<Reservation>>> reservations = ride.getReservationsPerDay();
+
+            for (Map.Entry<ParkLocalTime, List<Reservation>> entry : reservations.get(day).entrySet()) {
+                ParkLocalTime slot = entry.getKey();
+                for (Reservation reservation : entry.getValue()) {
+                    if(reservation.getState() == ReservationState.CONFIRMED){
+                        confirmedBookings.add(new ConfirmedBookings(rideName, reservation.getVisitorId().toString(), slot.toString()));
+                    }
+                }
+            }
+        });
+
+        //TODO: Revisar orden
+        confirmedBookings.sort(Comparator.comparing(ConfirmedBookings::getSlot).thenComparing(ConfirmedBookings::getRideName));
+
+        return confirmedBookings;
     }
 }
