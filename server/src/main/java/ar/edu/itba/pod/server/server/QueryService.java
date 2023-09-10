@@ -20,7 +20,7 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
 
     @Override
     public void queryCapacitySuggestion(QueryServiceOuterClass.QueryDayRequest request, StreamObserver<QueryServiceOuterClass.CapacitySuggestionResponse> responseObserver) {
-        int day = request.getDayOfYear().getValue();
+        int day = Integer.parseInt(request.getDayOfYear().getValue());
 
         if(day < 1 || day > 365) {
             throw new InvalidTimeException("Day must be between 1 and 365");
@@ -69,7 +69,7 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
 
     @Override
     public void queryConfirmedBookings(QueryServiceOuterClass.QueryDayRequest request, StreamObserver<QueryServiceOuterClass.ConfirmedBookingsResponse> responseObserver) {
-        int day = request.getDayOfYear().getValue();
+        int day = Integer.parseInt(request.getDayOfYear().getValue());
 
         if(day < 1 || day > 365) {
             throw new IllegalArgumentException("Day must be between 1 and 365");

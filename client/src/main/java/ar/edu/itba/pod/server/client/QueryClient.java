@@ -1,83 +1,95 @@
 package ar.edu.itba.pod.server.client;
 
 import ar.edu.itba.pod.server.client.utils.ClientUtils;
-import com.google.protobuf.Int32Value;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.StringValue;
 import io.grpc.ManagedChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rideBooking.QueryServiceGrpc;
 import rideBooking.QueryServiceOuterClass;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CountDownLatch;
 
 import static ar.edu.itba.pod.server.client.utils.ClientUtils.*;
 
 public class QueryClient {
     private static final Logger logger = LoggerFactory.getLogger(QueryClient.class);
+    private static final CountDownLatch latch = new CountDownLatch(1);
 
-//     ./query-cli -DserverAddress=10.6.0.1:50051 -Daction=capacity/confirmed -Dday=100 -DoutPath=query1.txt
+    //     ./query-cli -DserverAddress=10.6.0.1:50051 -Daction=capacity/confirmed -Dday=100 -DoutPath=query1.txt
     public static void main(String[] args) throws InterruptedException {
         logger.info("Query Client Starting ...");
 
         Map<String, String> argMap = parseArguments(args);
 
-        final String serverAddress = getArgumentValue(argMap, SERVER_ADDRESS);
-        final String action = getArgumentValue(argMap, ACTION_NAME);;
-        final String day = getArgumentValue(argMap, DAY);
-        final String outPath = getArgumentValue(argMap, OUTPATH);
+        final String serverAddress = getArgumentValue(argMap, ClientUtils.SERVER_ADDRESS);
+        final String action = getArgumentValue(argMap, ClientUtils.ACTION_NAME);;
+        final String day = getArgumentValue(argMap, ClientUtils.DAY);
+        final String outPath = getArgumentValue(argMap, ClientUtils.OUTPATH);
 
         ManagedChannel channel = buildChannel(serverAddress);
 
-        try {
-            switch(action){
-                case "capacity" -> {
-                    logger.info("Capacity Suggestion Query\n");
+        //TODO: blockingStub?
+        QueryServiceGrpc.QueryServiceFutureStub stub = QueryServiceGrpc.newFutureStub(channel);
 
-                    List<QueryServiceOuterClass.CapacitySuggestion> list = new LinkedList<>();
+        switch(action){
+            case "capacity" -> {
+                logger.info("Capacity Suggestion Query\n");
 
-                    list.add(QueryServiceOuterClass.CapacitySuggestion.newBuilder()
-                            .setRideName(StringValue.of("ride1"))
-                            .setSuggestedCapacity(Int32Value.of(1))
-                            .setSlot(StringValue.of("10:00"))
-                            .build());
+                ListenableFuture<QueryServiceOuterClass.CapacitySuggestionResponse> result = stub.queryCapacitySuggestion(
+                        QueryServiceOuterClass.QueryDayRequest.newBuilder().setDayOfYear(StringValue.of(day)).build()
+                );
 
-                    list.add(QueryServiceOuterClass.CapacitySuggestion.newBuilder()
-                            .setRideName(StringValue.of("ride2"))
-                            .setSuggestedCapacity(Int32Value.of(1))
-                            .setSlot(StringValue.of("12:00"))
-                            .build());
+                Futures.addCallback(result, new FutureCallback<>() {
+                    @Override
+                    public void onSuccess(QueryServiceOuterClass.CapacitySuggestionResponse capacitySuggestionResponse) {
+                        List<QueryServiceOuterClass.CapacitySuggestion> list = capacitySuggestionResponse.getCapacitySuggestionsList();
+                        generateCapacityQueryFileContent(list, outPath);
+                        latch.countDown();
+                    }
 
-                    generateCapacityQueryFileContent(list, outPath);
-
-                }
-                case "confirmed" -> {
-                    logger.info("Confirmed Bookings Query\n");
-
-                    List<QueryServiceOuterClass.ConfirmedBooking> list = new LinkedList<>();
-
-                    list.add(QueryServiceOuterClass.ConfirmedBooking.newBuilder()
-                            .setRideName(StringValue.of("ride1"))
-                            .setVisitorId(StringValue.of("ca286ef0-162a-42fd-b9ea-60166ff0a593"))
-                            .setSlot(StringValue.of("10:00"))
-                            .build());
-
-                    list.add(QueryServiceOuterClass.ConfirmedBooking.newBuilder()
-                            .setRideName(StringValue.of("ride2"))
-                            .setVisitorId(StringValue.of("ca286ef0-162a-42fd-b9ea-60166ff0a593"))
-                            .setSlot(StringValue.of("12:00"))
-                            .build());
-
-                    generateConfirmedQueryFileContent(list, outPath);
-                }
-                default -> logger.error("Invalid action");
+                    @Override
+                    public void onFailure(Throwable throwable) {
+                        System.out.println("Error\n");
+                        latch.countDown();
+                        System.err.println(throwable.getMessage());
+                    }}, Runnable::run);
             }
-        } catch (RuntimeException e) {
-            System.err.println(e.getMessage());
-        } finally {
-            channel.shutdown().awaitTermination(10, TimeUnit.SECONDS);
+            case "confirmed" -> {
+                logger.info("Confirmed Bookings Query\n");
+
+                ListenableFuture<QueryServiceOuterClass.ConfirmedBookingsResponse> result = stub.queryConfirmedBookings(
+                        QueryServiceOuterClass.QueryDayRequest.newBuilder().setDayOfYear(StringValue.of(day)).build()
+                );
+
+                Futures.addCallback(result, new FutureCallback<>() {
+                    @Override
+                    public void onSuccess(QueryServiceOuterClass.ConfirmedBookingsResponse confirmedBookingsResponse) {
+                        List<QueryServiceOuterClass.ConfirmedBooking> list = confirmedBookingsResponse.getConfirmedBookingsList();
+                        generateConfirmedQueryFileContent(list, outPath);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onFailure(Throwable throwable) {
+                        System.out.println("Error\n");
+                        latch.countDown();
+                        System.err.println(throwable.getMessage());
+                    }}, Runnable::run);
+            }
+            default -> logger.error("Invalid action");
+        }
+
+        try {
+            System.out.println("Waiting for response...");
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 

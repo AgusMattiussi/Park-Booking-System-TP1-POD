@@ -14,7 +14,7 @@ service QueryService {
 }
 
 message QueryDayRequest {
-  google.protobuf.Int32Value day_of_year = 1;
+  google.protobuf.StringValue day_of_year = 1;
 }
 
 message CapacitySuggestionResponse {
