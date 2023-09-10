@@ -44,7 +44,7 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
         List<CapacitySuggestion> responseList = new LinkedList<>();
 
         rides.values().forEach(ride -> {
-            if(ride.getSlotCapacityPerDay(day) != null) {
+            if(ride.getSlotCapacityPerDay(day) == null) { // Si la atracción ya cuenta con una capacidad cargada entonces no debe listarse en la consulta.
                 String rideName = ride.getName();
 
                 Map<Integer, Map<ParkLocalTime, List<Reservation>>> reservations = ride.getReservationsPerDay();
