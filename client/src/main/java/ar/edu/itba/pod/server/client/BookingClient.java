@@ -50,15 +50,9 @@ public class BookingClient {
         System.out.println();
 
 
-
         ManagedChannel channel = ClientUtils.buildChannel(serverAddress);
-
         RideBookingServiceGrpc.RideBookingServiceFutureStub stub = RideBookingServiceGrpc.newFutureStub(channel);
 
-        /*final String rideName = argMap.get(ClientUtils.RIDE_NAME);
-        final String visitorId = argMap.get(ClientUtils.VISITOR_ID);
-        final String bookingSlot = argMap.get(ClientUtils.BOOKING_SLOT);
-        final String bookingSlotTo = argMap.get(ClientUtils.BOOKING_SLOT_TO);*/
 
         switch (action) {
             case "attractions" -> {
@@ -159,6 +153,69 @@ public class BookingClient {
                     }
                 }, Runnable::run);
             }
+            case "confirm" -> {
+                final String rideName = argMap.get(ClientUtils.RIDE_NAME);
+                final String day = argMap.get(ClientUtils.DAY);
+                final String bookingSlot = argMap.get(ClientUtils.BOOKING_SLOT);
+                final String visitorId = argMap.get(ClientUtils.VISITOR_ID);
+
+
+                ListenableFuture<RideBookingServiceOuterClass.BookRideResponse> result = stub.confirmBooking(
+                        RideBookingServiceOuterClass.BookRideRequest.newBuilder()
+                                .setRideName(StringValue.of(rideName))
+                                .setDayOfYear(StringValue.of(day))
+                                .setTimeSlot(StringValue.of(bookingSlot))
+                                .setVisitorId(StringValue.of(visitorId))
+                                .build());
+
+                Futures.addCallback(result, new FutureCallback<>() {
+                    @Override
+                    public void onSuccess(RideBookingServiceOuterClass.BookRideResponse bookRideResponse) {
+                        System.out.println("Success!\n");
+                        System.out.printf("The reservation for %s at %s on the day %s is %s\n",
+                                rideName, bookingSlot, day, bookRideResponse.getStatus());
+                    }
+
+                    @Override
+                    public void onFailure(Throwable throwable) {
+                        System.out.println("Error\n");
+                        latch.countDown();
+                        System.out.println(throwable.getMessage());
+                    }
+                }, Runnable::run);
+            }
+            case "cancel" -> {
+                final String rideName = argMap.get(ClientUtils.RIDE_NAME);
+                final String day = argMap.get(ClientUtils.DAY);
+                final String bookingSlot = argMap.get(ClientUtils.BOOKING_SLOT);
+                final String visitorId = argMap.get(ClientUtils.VISITOR_ID);
+
+
+                ListenableFuture<RideBookingServiceOuterClass.BookRideResponse> result = stub.cancelBooking(
+                        RideBookingServiceOuterClass.BookRideRequest.newBuilder()
+                                .setRideName(StringValue.of(rideName))
+                                .setDayOfYear(StringValue.of(day))
+                                .setTimeSlot(StringValue.of(bookingSlot))
+                                .setVisitorId(StringValue.of(visitorId))
+                                .build());
+
+                Futures.addCallback(result, new FutureCallback<>() {
+                    @Override
+                    public void onSuccess(RideBookingServiceOuterClass.BookRideResponse bookRideResponse) {
+                        System.out.println("Success!\n");
+                        System.out.printf("The reservation for %s at %s on the day %s is %s\n",
+                                rideName, bookingSlot, day, bookRideResponse.getStatus());
+                    }
+
+                    @Override
+                    public void onFailure(Throwable throwable) {
+                        System.out.println("Error\n");
+                        latch.countDown();
+                        System.out.println(throwable.getMessage());
+                    }
+                }, Runnable::run);
+            }
+
         }
 
         try {
