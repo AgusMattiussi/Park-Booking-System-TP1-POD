@@ -471,6 +471,9 @@ public class RideRepository {
     }
 
 
+    public ConcurrentMap<UUID, ConcurrentMap<Integer, ConcurrentSkipListSet<String>>> getNotifications() {
+        return notifications;
+    }
 
 
 
