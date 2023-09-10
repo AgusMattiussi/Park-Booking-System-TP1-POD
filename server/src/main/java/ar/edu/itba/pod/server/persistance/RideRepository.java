@@ -31,7 +31,6 @@ public class RideRepository {
         this.rides = new ConcurrentHashMap<>();
         this.parkPasses = new ConcurrentHashMap<>();
         this.bookedRides = new ConcurrentHashMap<>();
-        this.notifications = new ConcurrentHashMap<>();
 
         //TODO: Borrar
 //        rides.put("Space Mountain", new Ride("Space Mountain", new RideTime(ParkLocalTime.fromString("10:00"), ParkLocalTime.fromString("18:00")), 15));
@@ -323,6 +322,7 @@ public class RideRepository {
         return Optional.empty();
     }
 
+
     /*
      *  Confirms a previously booked ride
      *
@@ -403,16 +403,17 @@ public class RideRepository {
     }
 
     public boolean removeVisitor(UUID visitorId, String rideName, int day) {
-        if(!this.notifications.containsKey(visitorId)) {
-            throw new VisitorNotFoundException("No user found for the visitorId " + visitorId);
-        }
+        if (!rideExists(rideName))
+            throw new RideNotFoundException("This ride does not exist");
 
-        if(this.notifications.get(visitorId).containsKey(day)) {
-            return this.notifications.get(visitorId).get(day).remove(rideName);
-        }
-        else {
-            return false;
-        }
+        validateDay(day);
+
+        if(!hasValidPass(visitorId, day))
+            throw new PassNotFoundException("No valid pass for day " + day);
+
+
+        getUserReservationsByDay(rideName, day, visitorId).forEach(reservation -> reservation.setShouldNotify(false));
+        return true;
     }
 
     /* Returns the availability for a ride in a given day and time slot */

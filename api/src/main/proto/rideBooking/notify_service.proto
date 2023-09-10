@@ -2,15 +2,16 @@ syntax = "proto3";
 
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/empty.proto";
+import "rideBooking/models.proto";
 
 package rideBooking;
 
 service NotifyService {
   // 1. Registrar a un visitante para que sea notificado de los eventos relacionados a una reserva
-  rpc notifyVisitor(NotifyRequest) returns (Notification);
+  rpc notifyVisitor(NotifyRequest) returns (NotificationResponse);
 
   // 2.  Anular el registro de un visitante para no recibir más notificaciones
-  rpc notifyRemoveVisitor(NotifyRequest) returns (google.protobuf.Empty);
+  rpc notifyRemoveVisitor(NotifyRequest) returns (NotificationResponse);
 }
 
 message NotifyRequest {
@@ -27,4 +28,8 @@ message Notification {
   oneof notification {
     string message = 1;
   }
+}
+
+message NotificationResponse {
+    SimpleStatusResponse status = 1;
 }

@@ -20,30 +20,32 @@ public class NotifyServer extends NotifyServiceGrpc.NotifyServiceImplBase{
     private static final RideRepository repository = RideRepository.getInstance();
 
     @Override
-    public void notifyVisitor(NotifyRequest request, StreamObserver<Notification> responseObserver) {
+    public void notifyVisitor(NotifyRequest request, StreamObserver<NotifyServiceOuterClass.NotificationResponse> responseObserver) {
         boolean status = repository.addVisitor(UUID.fromString(request.getVisitorId()), request.getRideName(), request.getDayOfYear());
         final String msg;
-        if(status) {
+        /*if(status) {
             msg = "Visitor has been registered for notifications from ride " + request.getRideName() + " on day " + request.getDayOfYear();
         }
         else {
             msg = "Visitor could not be registered for notifications.";
-        }
-        responseObserver.onNext(Notification.newBuilder().setMessage(msg).build());
+        }*/
+        responseObserver.onNext(NotifyServiceOuterClass.NotificationResponse.newBuilder().setStatus(Models.SimpleStatusResponse.OK).build());
         responseObserver.onCompleted();
     }
 
     @Override
     public void notifyRemoveVisitor(NotifyRequest request, StreamObserver<NotifyServiceOuterClass.NotificationResponse> responseObserver) {
         boolean status = repository.removeVisitor(UUID.fromString(request.getVisitorId()), request.getRideName(), request.getDayOfYear());
-        final String msg;
+        /*final String msg;
         if(status) {
             msg = "Visitor has been registered for notifications from ride " + request.getRideName() + " on day " + request.getDayOfYear();
         }
         else {
             msg = "Visitor could not be registered for notifications.";
-        }
-        responseObserver.onNext(Empty.newBuilder().build());
+        }*/
+
+
+        responseObserver.onNext(NotifyServiceOuterClass.NotificationResponse.newBuilder().setStatus(Models.SimpleStatusResponse.OK).build());
         responseObserver.onCompleted();
     }
 }

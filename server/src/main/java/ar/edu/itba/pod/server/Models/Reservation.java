@@ -1,5 +1,6 @@
 package ar.edu.itba.pod.server.Models;
 
+import java.security.InvalidParameterException;
 import java.time.LocalTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -10,12 +11,14 @@ public class Reservation implements Comparable<Reservation> {
     private ReservationState state;
     private final int day;
     private final ParkLocalTime time;
+    private boolean shouldNotify;
 
     public Reservation(UUID visitorId, ReservationState state, int day, ParkLocalTime time) {
         this.visitorId = visitorId;
         this.state = state;
         this.day = day;
         this.time = time;
+        this.shouldNotify = false;
     }
 
     public UUID getVisitorId() {
@@ -36,6 +39,12 @@ public class Reservation implements Comparable<Reservation> {
 
     public void setState(ReservationState state) {
         this.state = state;
+    }
+
+    public void setShouldNotify(boolean shouldNotify) {
+        if(shouldNotify && this.shouldNotify)
+            throw new InvalidParameterException("Reservation is already registered for notifications");
+        this.shouldNotify = shouldNotify;
     }
 
     public void confirm(){
