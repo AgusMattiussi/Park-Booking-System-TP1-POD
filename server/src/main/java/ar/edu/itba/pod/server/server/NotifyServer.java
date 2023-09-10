@@ -1,7 +1,6 @@
 package ar.edu.itba.pod.server.server;
 
 
-import ar.edu.itba.pod.server.Models.requests.BookRideRequestModel;
 import ar.edu.itba.pod.server.persistance.RideRepository;
 import com.google.protobuf.Empty;
 import io.grpc.stub.StreamObserver;
@@ -9,9 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rideBooking.Models;
 import rideBooking.NotifyServiceGrpc;
+import rideBooking.NotifyServiceOuterClass;
 import rideBooking.NotifyServiceOuterClass.NotifyRequest;
 import rideBooking.NotifyServiceOuterClass.Notification;
-import rideBooking.RideBookingServiceOuterClass;
 
 import java.util.UUID;
 
@@ -35,7 +34,7 @@ public class NotifyServer extends NotifyServiceGrpc.NotifyServiceImplBase{
     }
 
     @Override
-    public void notifyRemoveVisitor(NotifyRequest request, StreamObserver<Empty> responseObserver) {
+    public void notifyRemoveVisitor(NotifyRequest request, StreamObserver<NotifyServiceOuterClass.NotificationResponse> responseObserver) {
         boolean status = repository.removeVisitor(UUID.fromString(request.getVisitorId()), request.getRideName(), request.getDayOfYear());
         final String msg;
         if(status) {

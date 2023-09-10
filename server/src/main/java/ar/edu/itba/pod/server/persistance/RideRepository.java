@@ -21,8 +21,7 @@ public class RideRepository {
     // TODO: Considerar cual es el caso de uso mas comun para definir el mapeo
     /* Maps ride names to a map of <User ID, List of reservations> */
     private final ConcurrentMap<String, ConcurrentMap<UUID, ConcurrentMap<Integer, ConcurrentSkipListSet<Reservation>>>> bookedRides;
-    /* Maps visitor ID to ride notifications */
-    private final ConcurrentMap<UUID, ConcurrentMap<Integer, ConcurrentSkipListSet<String>>> notifications;
+
 
     private int acceptedAmount = 0;
     private int relocatedAmount = 0;
@@ -395,9 +394,8 @@ public class RideRepository {
             throw new PassNotFoundException("No valid pass for day " + day);
 
 
-        notifications.putIfAbsent(visitorId, new ConcurrentHashMap<>());
-        notifications.get(visitorId).putIfAbsent(day, new ConcurrentSkipListSet<>());
-        return notifications.get(visitorId).get(day).add(rideName);
+        getUserReservationsByDay(rideName, day, visitorId).forEach(reservation -> reservation.setShouldNotify(true));
+        return true;
     }
 
     private boolean hasValidPass(UUID visitorId, int day) {
@@ -469,13 +467,4 @@ public class RideRepository {
 
         return rideAvailability;
     }
-
-
-    public ConcurrentMap<UUID, ConcurrentMap<Integer, ConcurrentSkipListSet<String>>> getNotifications() {
-        return notifications;
-    }
-
-
-
-
 }
