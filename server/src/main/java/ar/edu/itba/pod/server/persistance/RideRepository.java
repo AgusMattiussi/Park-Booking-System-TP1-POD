@@ -302,7 +302,7 @@ public class RideRepository {
         Set<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
 
         ReservationState state = ride.isSlotCapacitySet(dayOfTheYear) ? ReservationState.CONFIRMED : ReservationState.PENDING;
-        Reservation reservation = new Reservation(visitorId, state, dayOfTheYear, timeSlot);
+        Reservation reservation = new Reservation(rideName, visitorId, state, dayOfTheYear, timeSlot);
 
         if(reservations.contains(reservation))
             throw new AlreadyExistsException(String.format("Visitor '%s' already booked a ticket for '%s' at time slot '%s'", visitorId, rideName, timeSlot));
@@ -314,7 +314,7 @@ public class RideRepository {
     private Optional<Reservation> getReservation(String rideName, int dayOfTheYear, ParkLocalTime timeSlot, UUID visitorId){
         Set<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
         if(!reservations.isEmpty()) {
-            Reservation toFind = new Reservation(visitorId, ReservationState.UNKNOWN_STATE, dayOfTheYear, timeSlot);
+            Reservation toFind = new Reservation(rideName, visitorId, ReservationState.UNKNOWN_STATE, dayOfTheYear, timeSlot);
 
             for (Reservation r : reservations) {
                 if (r.equals(toFind))
@@ -373,7 +373,7 @@ public class RideRepository {
         validateRideTimeAndAccess(ride, dayOfTheYear, timeSlot, visitorId);
 
         Set<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
-        Reservation toRemove = new Reservation(visitorId, ReservationState.UNKNOWN_STATE, dayOfTheYear, timeSlot);
+        Reservation toRemove = new Reservation(rideName, visitorId, ReservationState.UNKNOWN_STATE, dayOfTheYear, timeSlot);
 
         if(!reservations.remove(toRemove))
             throw new ReservationNotFoundException(String.format(

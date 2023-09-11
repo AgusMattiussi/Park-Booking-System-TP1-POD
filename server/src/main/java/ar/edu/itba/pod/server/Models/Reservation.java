@@ -1,7 +1,6 @@
 package ar.edu.itba.pod.server.Models;
 
 import java.security.InvalidParameterException;
-import java.time.LocalTime;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -10,14 +9,17 @@ import rideBooking.Models.ReservationState;
 import rideBooking.NotifyServiceOuterClass;
 
 public class Reservation implements Comparable<Reservation> {
+    private final String rideName;
     private final UUID visitorId;
     private ReservationState state;
     private final int day;
     private final ParkLocalTime time;
     private boolean shouldNotify;
+    //TODO: Chequear thread-safety
     private StreamObserver<NotifyServiceOuterClass.Notification> notificationObserver;
 
-    public Reservation(UUID visitorId, ReservationState state, int day, ParkLocalTime time) {
+    public Reservation(String rideName, UUID visitorId, ReservationState state, int day, ParkLocalTime time) {
+        this.rideName = rideName;
         this.visitorId = visitorId;
         this.state = state;
         this.day = day;
@@ -66,10 +68,45 @@ public class Reservation implements Comparable<Reservation> {
         return aux;
     }
 
-    private void notifyVisitor(String message) {
-        if(notificationObserver == null)
+    public boolean isRegisteredForNotifications() {
+        return shouldNotify;
+    }
+
+    public void notifyVisitor(String message) {
+        if(!shouldNotify)
             throw new InvalidParameterException("Reservation is not registered for notifications");
         notificationObserver.onNext(NotifyServiceOuterClass.Notification.newBuilder().setMessage(message).build());
+    }
+
+    private void notifyState(ReservationState state){
+        notifyVisitor(String.format("The reservation for %s at %s on the day %d is %s", this.rideName, this.time.toString(), this.day, state.toString()));
+    }
+
+    public void notifyRegistered() {
+        notifyState(this.state);
+    }
+
+    public void notifyConfirmed(){
+        notifyState(ReservationState.CONFIRMED);
+    }
+
+    public void notifyCancelled(){
+        notifyState(ReservationState.CANCELLED);
+    }
+
+    //FIXME: Va a devolver la misma notificacion para cada Reservation del dia
+    public void notifySlotsCapacityAdded(int capacity){
+        notifyVisitor(String.format("%s announced slot capacity for the day %d: %d places.", rideName, day, capacity));
+    }
+
+    //TODO: Siempre queda pending despues de realocar?
+    public void notifyRelocated(String previousTime){
+        notifyVisitor(String.format("The reservation for %s at %s on the day %d was moved to 15:45 and is %s.",
+                this.rideName, previousTime, this.day, ReservationState.PENDING));
+    }
+
+    public void notifyRelocated(ParkLocalTime previousTime){
+        notifyRelocated(previousTime.toString());
     }
 
     public void confirm(){
