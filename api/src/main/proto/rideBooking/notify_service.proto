@@ -11,7 +11,7 @@ service NotifyService {
   rpc notifyVisitor(NotifyRequest) returns (Notification);
 
   // 2.  Anular el registro de un visitante para no recibir más notificaciones
-  rpc notifyRemoveVisitor(NotifyRequest) returns (Notification);
+  rpc notifyRemoveVisitor(NotifyRequest) returns (NotificationResponse);
 }
 
 message NotifyRequest {

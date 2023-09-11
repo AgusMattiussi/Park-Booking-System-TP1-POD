@@ -21,13 +21,25 @@ public class NotifyServer extends NotifyServiceGrpc.NotifyServiceImplBase{
 
     @Override
     public void notifyVisitor(NotifyRequest request, StreamObserver<NotifyServiceOuterClass.Notification> responseObserver) {
-
-
-
+        //TODO: Wrapper del request
+        repository.registerForNotifications(UUID.fromString(request.getVisitorId()),
+                request.getRideName(), request.getDayOfYear(), responseObserver);
     }
 
     @Override
-    public void notifyRemoveVisitor(NotifyRequest request, StreamObserver<NotifyServiceOuterClass.Notification> responseObserver) {
+    public void notifyRemoveVisitor(NotifyRequest request, StreamObserver<NotifyServiceOuterClass.NotificationResponse> responseObserver) {
+        StreamObserver<NotifyServiceOuterClass.Notification> notificationObserver =
+                repository.unregisterForNotifications(UUID.fromString(request.getVisitorId()),
+                        request.getRideName(), request.getDayOfYear());
+
+        notificationObserver.onCompleted();
+
+        responseObserver.onNext(NotifyServiceOuterClass.NotificationResponse
+                        .newBuilder()
+                        .setStatus(Models.SimpleStatusResponse.OK)
+                        .build());
+
+        responseObserver.onCompleted();
 
     }
 }

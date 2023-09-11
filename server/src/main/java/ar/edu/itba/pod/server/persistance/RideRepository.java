@@ -411,7 +411,7 @@ public class RideRepository {
     }
 
 
-    public void removeVisitor(UUID visitorId, String rideName, int day) {
+    public StreamObserver<NotifyServiceOuterClass.Notification> unregisterForNotifications(UUID visitorId, String rideName, int day) {
         if (!rideExists(rideName))
             throw new RideNotFoundException("This ride does not exist");
 
@@ -429,7 +429,7 @@ public class RideRepository {
         for (Reservation reservation : reservations) {
             notificationObserver = reservation.unregisterForNotifications();
         }
-        notificationObserver.onCompleted();
+        return notificationObserver;
     }
 
     /* Returns the availability for a ride in a given day and time slot */
