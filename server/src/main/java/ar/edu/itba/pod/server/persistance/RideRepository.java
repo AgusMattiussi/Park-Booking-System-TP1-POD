@@ -2,9 +2,12 @@ package ar.edu.itba.pod.server.persistance;
 
 import ar.edu.itba.pod.server.Models.*;
 import ar.edu.itba.pod.server.exceptions.*;
+import io.grpc.stub.StreamObserver;
 import rideBooking.AdminParkServiceOuterClass;
 import rideBooking.Models;
 import rideBooking.Models.ReservationState;
+import rideBooking.NotifyServiceOuterClass;
+
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -269,7 +272,7 @@ public class RideRepository {
     }
 
     //TODO: Que pasa si me consultan por reservas y empiezan a crear nuevas?
-    private ConcurrentSkipListSet<Reservation> getUserReservationsByDay(String rideName, int dayOfTheYear, UUID visitorId){
+    private Set<Reservation> getUserReservationsByDay(String rideName, int dayOfTheYear, UUID visitorId){
         bookedRides.putIfAbsent(rideName, new ConcurrentHashMap<>());
 
         Map<UUID, ConcurrentMap<Integer, ConcurrentSkipListSet<Reservation>>> rideBookedSlotsByUser = bookedRides.get(rideName);
@@ -296,7 +299,7 @@ public class RideRepository {
         Ride ride = getRide(rideName);
         validateRideTimeAndAccess(ride, dayOfTheYear, timeSlot, visitorId);
         
-        ConcurrentSkipListSet<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
+        Set<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
 
         ReservationState state = ride.isSlotCapacitySet(dayOfTheYear) ? ReservationState.CONFIRMED : ReservationState.PENDING;
         Reservation reservation = new Reservation(visitorId, state, dayOfTheYear, timeSlot);
@@ -309,7 +312,7 @@ public class RideRepository {
     }
 
     private Optional<Reservation> getReservation(String rideName, int dayOfTheYear, ParkLocalTime timeSlot, UUID visitorId){
-        ConcurrentSkipListSet<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
+        Set<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
         if(!reservations.isEmpty()) {
             Reservation toFind = new Reservation(visitorId, ReservationState.UNKNOWN_STATE, dayOfTheYear, timeSlot);
 
@@ -369,7 +372,7 @@ public class RideRepository {
         Ride ride = getRide(rideName);
         validateRideTimeAndAccess(ride, dayOfTheYear, timeSlot, visitorId);
 
-        ConcurrentSkipListSet<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
+        Set<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
         Reservation toRemove = new Reservation(visitorId, ReservationState.UNKNOWN_STATE, dayOfTheYear, timeSlot);
 
         if(!reservations.remove(toRemove))
@@ -377,7 +380,12 @@ public class RideRepository {
                     "Reservation not found for visitor '%s' at ride '%s' at time slot '%s'", visitorId, rideName, timeSlot));
     }
 
-    public boolean addVisitor(UUID visitorId, String rideName, int day) {
+    //FIXME: Chequear si anda
+    private boolean hasValidPass(UUID visitorId, int day) {
+        return this.parkPasses.containsKey(visitorId) && this.parkPasses.get(visitorId).containsKey(day);
+    }
+
+    public void registerForNotifications(UUID visitorId, String rideName, int day, StreamObserver<NotifyServiceOuterClass.Notification> notificationObserver) {
         /*
         FAIL CONDITIONS:
         - No ride under that name
@@ -394,15 +402,16 @@ public class RideRepository {
             throw new PassNotFoundException("No valid pass for day " + day);
 
 
-        getUserReservationsByDay(rideName, day, visitorId).forEach(reservation -> reservation.setShouldNotify(true));
-        return true;
+        Set<Reservation> reservations = getUserReservationsByDay(rideName, day, visitorId);
+        if(reservations == null || reservations.isEmpty())
+            throw new ReservationNotFoundException(String.format("No reservations for visitor %s for ride %s on day %d", visitorId, rideName, day));
+
+        /* Register all reservations for notifications */
+        reservations.forEach(reservation -> reservation.registerForNotifications(notificationObserver));
     }
 
-    private boolean hasValidPass(UUID visitorId, int day) {
-        return this.parkPasses.containsKey(visitorId) && this.parkPasses.get(visitorId).containsKey(day);
-    }
 
-    public boolean removeVisitor(UUID visitorId, String rideName, int day) {
+    public void removeVisitor(UUID visitorId, String rideName, int day) {
         if (!rideExists(rideName))
             throw new RideNotFoundException("This ride does not exist");
 
@@ -411,9 +420,16 @@ public class RideRepository {
         if(!hasValidPass(visitorId, day))
             throw new PassNotFoundException("No valid pass for day " + day);
 
+        Set<Reservation> reservations = getUserReservationsByDay(rideName, day, visitorId);
+        if(reservations == null || reservations.isEmpty())
+            throw new ReservationNotFoundException(String.format("No reservations for visitor %s for ride %s on day %d", visitorId, rideName, day));
 
-        getUserReservationsByDay(rideName, day, visitorId).forEach(reservation -> reservation.setShouldNotify(false));
-        return true;
+        /* All these reservations share the same notificationObserver */
+        StreamObserver<NotifyServiceOuterClass.Notification> notificationObserver = null;
+        for (Reservation reservation : reservations) {
+            notificationObserver = reservation.unregisterForNotifications();
+        }
+        notificationObserver.onCompleted();
     }
 
     /* Returns the availability for a ride in a given day and time slot */
@@ -429,8 +445,9 @@ public class RideRepository {
                 ride.getCapacityForTimeSlot(day, timeSlot));
     }
 
+    //FIXME: Los intervalos no son todos de 15 minutos
     private Map<ParkLocalTime, RideAvailability> getRideAvailability(String rideName, ParkLocalTime startTimeSlot, ParkLocalTime endTimeSlot, int day){
-        // TODO: Validar que los tiempos sean correctos (intervalos de 15 min)
+        // TODO: Validar que los tiempos sean correctos (intervalos)
         // TODO: Extraer esta validacion?
         if (startTimeSlot.isAfter(endTimeSlot)) {
             throw new IllegalArgumentException("Start time slot must be before end time slot");

@@ -20,32 +20,14 @@ public class NotifyServer extends NotifyServiceGrpc.NotifyServiceImplBase{
     private static final RideRepository repository = RideRepository.getInstance();
 
     @Override
-    public void notifyVisitor(NotifyRequest request, StreamObserver<NotifyServiceOuterClass.NotificationResponse> responseObserver) {
-        boolean status = repository.addVisitor(UUID.fromString(request.getVisitorId()), request.getRideName(), request.getDayOfYear());
-        final String msg;
-        /*if(status) {
-            msg = "Visitor has been registered for notifications from ride " + request.getRideName() + " on day " + request.getDayOfYear();
-        }
-        else {
-            msg = "Visitor could not be registered for notifications.";
-        }*/
-        responseObserver.onNext(NotifyServiceOuterClass.NotificationResponse.newBuilder().setStatus(Models.SimpleStatusResponse.OK).build());
-        responseObserver.onCompleted();
+    public void notifyVisitor(NotifyRequest request, StreamObserver<NotifyServiceOuterClass.Notification> responseObserver) {
+
+
+
     }
 
     @Override
-    public void notifyRemoveVisitor(NotifyRequest request, StreamObserver<NotifyServiceOuterClass.NotificationResponse> responseObserver) {
-        boolean status = repository.removeVisitor(UUID.fromString(request.getVisitorId()), request.getRideName(), request.getDayOfYear());
-        /*final String msg;
-        if(status) {
-            msg = "Visitor has been registered for notifications from ride " + request.getRideName() + " on day " + request.getDayOfYear();
-        }
-        else {
-            msg = "Visitor could not be registered for notifications.";
-        }*/
+    public void notifyRemoveVisitor(NotifyRequest request, StreamObserver<NotifyServiceOuterClass.Notification> responseObserver) {
 
-
-        responseObserver.onNext(NotifyServiceOuterClass.NotificationResponse.newBuilder().setStatus(Models.SimpleStatusResponse.OK).build());
-        responseObserver.onCompleted();
     }
 }

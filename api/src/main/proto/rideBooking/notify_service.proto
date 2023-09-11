@@ -8,10 +8,10 @@ package rideBooking;
 
 service NotifyService {
   // 1. Registrar a un visitante para que sea notificado de los eventos relacionados a una reserva
-  rpc notifyVisitor(NotifyRequest) returns (NotificationResponse);
+  rpc notifyVisitor(NotifyRequest) returns (Notification);
 
   // 2.  Anular el registro de un visitante para no recibir más notificaciones
-  rpc notifyRemoveVisitor(NotifyRequest) returns (NotificationResponse);
+  rpc notifyRemoveVisitor(NotifyRequest) returns (Notification);
 }
 
 message NotifyRequest {
@@ -25,9 +25,7 @@ message NotifyRequest {
 
 
 message Notification {
-  oneof notification {
     string message = 1;
-  }
 }
 
 message NotificationResponse {
