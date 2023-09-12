@@ -13,6 +13,7 @@ import rideBooking.AdminParkServiceGrpc;
 import rideBooking.RideBookingServiceGrpc;
 import rideBooking.RideBookingServiceOuterClass;
 
+import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -215,7 +216,7 @@ public class BookingClient {
                     }
                 }, Runnable::run);
             }
-
+            default -> throw new InvalidParameterException(String.format("Action '%s' not supported", action));
         }
 
         try {
