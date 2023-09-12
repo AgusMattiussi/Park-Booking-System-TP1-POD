@@ -6,13 +6,15 @@ import com.google.protobuf.StringValue;
 import rideBooking.RideBookingServiceOuterClass;
 import rideBooking.Models.ReservationState;
 import java.util.*;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 //TODO: Cambiar las colecciones a su version concurrente
 public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.Ride>{
-    private static int rideCount = 0; //FIXME: no se si es la mejor implementación pero bué
+
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     private final String name;
-    private final int id;
 
     private final RideTime rideTime;
     private final int slotTime;
@@ -25,12 +27,8 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
 
     private List<Reservation> cancelledReservations;
 
-    public Ride(String name, RideTime rideTime, Integer slotTime){
-        this(getNextId(), name, rideTime, slotTime);
-    }
-    public Ride(int id, String name, RideTime rideTime, int slotTime) {
+    public Ride(String name, RideTime rideTime, int slotTime) {
         this.name = name;
-        this.id = id;
         this.rideTime = rideTime;
         this.slotTime = slotTime;
         this.slotsPerDay = new TreeMap<>();
@@ -55,35 +53,48 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
         return slotsPerDay;
     }
 
-    public int getId() {
-        return id;
-    }
 
     public Integer getSlotCapacityPerDay(Integer day) {
-        return slotCapacityPerDay.get(day);
+        lockRead();
+        Integer slotCapacity = slotCapacityPerDay.get(day);
+        unlockRead();
+        return slotCapacity;
     }
 
     public Map<Integer, Map<ParkLocalTime, List<Reservation>>> getReservationsPerDay() {
-        return reservationsPerDay;
+        lockRead();
+        Map<Integer, Map<ParkLocalTime, List<Reservation>>> reservations = reservationsPerDay;
+        unlockRead();
+        return reservations;
     }
 
     private Optional<List<Reservation>> getReservationsForTimeSlot(int day, ParkLocalTime timeSlot) {
+        Optional<List<Reservation>> optional = Optional.empty();
+        lockRead();
         if (reservationsPerDay.containsKey(day) && reservationsPerDay.get(day).containsKey(timeSlot))
-            return Optional.of(reservationsPerDay.get(day).get(timeSlot));
-        return Optional.empty();
+            optional = Optional.of(reservationsPerDay.get(day).get(timeSlot));
+        unlockRead();
+        return optional;
     }
 
     public int getCapacityForTimeSlot(int day, ParkLocalTime timeSlot) {
+        int capacity = 0;
+        lockRead();
         if (slotsPerDay.containsKey(day) && slotsPerDay.get(day).containsKey(timeSlot))
-            return slotsPerDay.get(day).get(timeSlot);
-        return 0;
+            capacity = slotsPerDay.get(day).get(timeSlot);
+        unlockRead();
+        return capacity;
     }
 
     private int countStateForTimeSlot(int day, ParkLocalTime timeSlot, ReservationState state) {
         Optional<List<Reservation>> reservations = getReservationsForTimeSlot(day, timeSlot);
-        return reservations.map(reservationList -> (int) reservationList.stream().filter(
+        int statesForTimeSlot = 0;
+        lockRead();
+        statesForTimeSlot = reservations.map(reservationList -> (int) reservationList.stream().filter(
                         reservation -> reservation.getState() == state).count())
                 .orElse(0);
+        unlockRead();
+        return statesForTimeSlot;
     }
     public int getConfirmedCountForTimeSlot(int day, ParkLocalTime timeSlot) {
         return countStateForTimeSlot(day, timeSlot, ReservationState.CONFIRMED);
@@ -93,31 +104,38 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
         return countStateForTimeSlot(day, timeSlot, ReservationState.PENDING);
     }
 
-    private static synchronized int getNextId(){
-        return rideCount++;
-    }
 
     public void setSlotCapacityPerDay(Integer day, Integer slotCapacity) {
         if (isSlotCapacitySet(day)){
             throw new SlotCapacityException("Capacity is already setted for day " + day + " in ride " + this.name);
         }else {
+            lockWrite();
             slotCapacityPerDay.put(day, slotCapacity);
+            unlockWrite();
         }
     }
 
     public void addCancelledReservations(Reservation cancelledReservation) {
+        lockWrite();
         this.cancelledReservations.add(cancelledReservation);
+        unlockWrite();
     }
 
 
     public boolean isSlotValid(int day, ParkLocalTime time) {
         //return true;
         //TODO: Descomentar
-        return slotsPerDay.containsKey(day) && slotsPerDay.get(day).containsKey(time);
+        lockRead();
+        boolean isSet = slotsPerDay.containsKey(day) && slotsPerDay.get(day).containsKey(time);
+        unlockRead();
+        return isSet;
     }
 
     public boolean isSlotCapacitySet(Integer day) {
-        return slotCapacityPerDay.containsKey(day);
+        lockRead();
+        boolean isSet = slotCapacityPerDay.containsKey(day);
+        unlockRead();
+        return isSet;
     }
 
     //TODO: Ver si esta es la unica implementacion posible (o si algun metodo necesita otra)
@@ -130,5 +148,13 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
                 .build();
     }
 
+
+    public void lockRead(){ lock.readLock().lock();}
+
+    public void lockWrite(){ lock.writeLock().lock();}
+
+    public void unlockRead(){ lock.readLock().unlock();}
+
+    public void unlockWrite(){ lock.writeLock().unlock();}
 
 }
