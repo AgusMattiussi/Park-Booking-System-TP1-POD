@@ -22,12 +22,12 @@ public final class ClientUtils {
     public final static String CLOSE_TIME = "closeTime";
     public final static String SLOT_MINUTES = "slotGap";
     public final static String DAY = "day";
-    public final static String VISITOR_ID = "visitorId";
+    public final static String VISITOR_ID = "visitor";
     public final static String PASS_TYPE = "passType";
     public final static String CAPACITY = "capacity";
     public final static String OUTPATH = "outPath";
-    public static final String BOOKING_SLOT = "bookingSlot";
-    public static final String BOOKING_SLOT_TO = "bookingSlotTo";
+    public static final String BOOKING_SLOT = "slot";
+    public static final String BOOKING_SLOT_TO = "slotTo";
 
 
     public static ManagedChannel buildChannel(String serverAddress){
