@@ -1,12 +1,11 @@
 package ar.edu.itba.pod.server.server;
 
+import ar.edu.itba.pod.server.Models.ParkLocalTime;
 import ar.edu.itba.pod.server.Models.ParkPass;
 import ar.edu.itba.pod.server.Models.Ride;
 import ar.edu.itba.pod.server.Models.RideTime;
 import ar.edu.itba.pod.server.persistance.RideRepository;
 import com.google.protobuf.BoolValue;
-import com.google.protobuf.Int32Value;
-import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +22,11 @@ public class AdminParkServer extends AdminParkServiceGrpc.AdminParkServiceImplBa
 
     @Override
     public void addRide(AddRideRequest request, StreamObserver<BoolValue> responseObserver) {
-        Optional<Ride> newRide = repository.addRide(request.getRideName(), new RideTime(request.getRideTime()), request.getSlotMinutes());
+        ParkLocalTime openTime = ParkLocalTime.fromString(request.getRideTime().getOpen());
+        ParkLocalTime closeTime = ParkLocalTime.fromString(request.getRideTime().getClose());
+        int timeSlotDuration = request.getSlotMinutes();
+
+        Optional<Ride> newRide = repository.addRide(request.getRideName(), new RideTime(openTime, closeTime, timeSlotDuration), request.getSlotMinutes());
         newRide.ifPresentOrElse(
                 ride -> {
                     responseObserver.onNext(BoolValue.of(true));

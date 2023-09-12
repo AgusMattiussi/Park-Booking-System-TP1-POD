@@ -149,11 +149,11 @@ public class RideRepository {
 //    True si puedo seguir reservando, false si no puedo
 //    Chequeo si es half day que la reserva sea antes de las 14hs
 //    y si es three que no tenga 3 o mas ya hechas
-    private boolean checkVisitorPass(Models.PassTypeEnum passType, UUID visitorId,  List<Reservation> reservationList,
+    private boolean checkVisitorPass(Models.PassTypeEnum passType, UUID visitorId,  Set<Reservation> reservationSet,
                                      ParkLocalTime reservationTime){
         int passes = 0;
         if(passType == Models.PassTypeEnum.THREE){
-            for (Reservation r: reservationList) {
+            for (Reservation r: reservationSet) {
                 if (r.getVisitorId() == visitorId){
                     passes+=1;
                 }
@@ -169,28 +169,28 @@ public class RideRepository {
         Ride ride = this.rides.get(rideName);
 
         //      si ya tiene una capacidad asignada falla, sino la agrega
-        ride.setSlotCapacityPerDay(day, capacity);
+        ride.setSlotCapacityForDay(day, capacity);
 
 
 
-        Map<Integer, Map<ParkLocalTime, List<Reservation>>> reservationsPerDay = ride.getReservationsPerDay();
+        Map<Integer, Map<ParkLocalTime, Set<Reservation>>> reservationsPerDay = ride.getReservationsPerDay();
 
         if(reservationsPerDay.containsKey(day)){
             // Iterate over each member of the map
-            Set<Map.Entry<ParkLocalTime, List<Reservation>>> entrySet = reservationsPerDay.get(day).entrySet();
-            for (Map.Entry<ParkLocalTime, List<Reservation>> reservations: entrySet) {
+            Set<Map.Entry<ParkLocalTime, Set<Reservation>>> entrySet = reservationsPerDay.get(day).entrySet();
+            for (Map.Entry<ParkLocalTime, Set<Reservation>> reservations: entrySet) {
                 ParkLocalTime reservationTime = reservations.getKey();
-                List<Reservation> reservationList = reservations.getValue();
-                for (int i = 0; i<reservationList.size(); i++){
-                    Reservation r = reservationList.get(i);
+                Set<Reservation> reservationSet = reservations.getValue();
+                int count = 0;
+                for(Reservation r : reservationSet){
 
                     if(r.isRegisteredForNotifications())
                         r.notifySlotsCapacityAdded(capacity);
 
                     UUID visitorId = r.getVisitorId();
                     Models.PassTypeEnum passType = this.parkPasses.get(visitorId).get(day).getType();
-                    if (checkVisitorPass(passType, visitorId, reservationList, reservationTime)){
-                        if(i<capacity){ // Agrego la cantidad que se me permite (capacity)
+                    if (checkVisitorPass(passType, visitorId, reservationSet, reservationTime)){
+                        if(count<capacity){ // Agrego la cantidad que se me permite (capacity)
                             if(r.getState() == ReservationState.RELOCATED){
                                 relocatedAmount +=1;
                             }else{
@@ -202,7 +202,7 @@ public class RideRepository {
                                 acceptedAmount +=1;
                             }
                         }else{ // Si no me entran, trato de reubicar
-                            for (Map.Entry<ParkLocalTime, List<Reservation>> afterTimeR: entrySet) {
+                            for (Map.Entry<ParkLocalTime, Set<Reservation>> afterTimeR: entrySet) {
                                 ParkLocalTime afterTime = afterTimeR.getKey();
                                 if(passType == Models.PassTypeEnum.HALFDAY && checkHalfDayPass(afterTime)) {
                                     // Si tenia pase HALFDAY y me pase de la hora permitida, salgo
@@ -210,12 +210,13 @@ public class RideRepository {
                                 }
                                 // Solo intento slots posteriores al de la reserva original.
                                 if(afterTime.isAfter(reservationTime)){
-                                    List<Reservation> afterReservations = afterTimeR.getValue();
+                                    Set<Reservation> afterReservations = afterTimeR.getValue();
                                     // Si tengo capacidad la reubico
                                     if(afterReservations.size() < capacity - 1){
                                         r.relocate();
                                         afterReservations.add(r);
-                                        reservationList.remove(r);
+                                        //TODO: No se si vale Remove en un for each
+                                        reservationSet.remove(r);
 
                                         if(r.isRegisteredForNotifications())
                                             r.notifyRelocated(reservationTime);
@@ -233,10 +234,11 @@ public class RideRepository {
                                 r.notifyCancelled();
 
                             ride.addCancelledReservations(r);
-                            reservationList.remove(r);
+                            reservationSet.remove(r);
                             cancelledAmount +=1;
                         }
                     }
+                    count++;
                 }
             }
         }
@@ -263,13 +265,15 @@ public class RideRepository {
         return rides.get(name);
     }
 
-    private void validateRideTimeSlot(Ride ride, int dayOfTheYear, ParkLocalTime timeSlot){
-        if(!ride.isSlotValid(dayOfTheYear, timeSlot))
+    /*private void validateRideTimeSlot(Ride ride, ParkLocalTime timeSlot){
+        if(!ride.isTimeSlotValid(timeSlot))
             throw new InvalidTimeException(String.format("Time slot '%s' is invalid for ride '%s'", timeSlot, ride.getName()));
-    }
+    }*/
 
     private void validateRideTimeAndAccess(Ride ride, int dayOfTheYear, ParkLocalTime timeSlot, UUID visitorId){
-        validateRideTimeSlot(ride, dayOfTheYear, timeSlot);
+        if(!ride.isTimeSlotValid(timeSlot))
+            throw new InvalidTimeException(String.format("Time slot '%s' is invalid for ride '%s'", timeSlot, ride.getName()));
+
         if(!hasValidPass(visitorId, dayOfTheYear))
             throw new PassNotFoundException(String.format("No valid pass for day %s", dayOfTheYear));
     }
@@ -457,7 +461,7 @@ public class RideRepository {
         return new RideAvailability(timeSlot,
                 ride.getPendingCountForTimeSlot(day, timeSlot),
                 ride.getConfirmedCountForTimeSlot(day, timeSlot),
-                ride.getCapacityForTimeSlot(day, timeSlot));
+                ride.getSlotCapacityForDay(day));
     }
 
     //FIXME: Los intervalos no son todos de 15 minutos
