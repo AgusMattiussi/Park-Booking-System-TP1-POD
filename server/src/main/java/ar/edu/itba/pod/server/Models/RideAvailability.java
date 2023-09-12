@@ -6,6 +6,7 @@ import rideBooking.RideBookingServiceOuterClass;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
+// TODO: Mover a carpeta 'Responses'?
 public class RideAvailability implements Comparable<RideAvailability>, GRPCModel<RideBookingServiceOuterClass.TimeSlotAvailability> {
     private final ParkLocalTime timeSlot;
     private final int pendingBookingsCount;

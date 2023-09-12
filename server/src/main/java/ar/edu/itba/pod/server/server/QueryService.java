@@ -44,13 +44,13 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
         List<CapacitySuggestion> responseList = new LinkedList<>();
 
         rides.values().forEach(ride -> {
-            if(ride.getSlotCapacityPerDay(day) == null) { // Si la atracción ya cuenta con una capacidad cargada entonces no debe listarse en la consulta.
+            if(!ride.isSlotCapacitySet(day)) { // Si la atracción ya cuenta con una capacidad cargada entonces no debe listarse en la consulta.
                 String rideName = ride.getName();
 
-                Map<Integer, Map<ParkLocalTime, List<Reservation>>> reservations = ride.getReservationsPerDay();
+                Map<Integer, Map<ParkLocalTime, Set<Reservation>>> reservations = ride.getReservationsPerDay();
                 int pendingBookings = 0;
 
-                for (Map.Entry<ParkLocalTime, List<Reservation>> entry : reservations.get(day).entrySet()) {
+                for (Map.Entry<ParkLocalTime, Set<Reservation>> entry : reservations.get(day).entrySet()) {
                     ParkLocalTime slot = entry.getKey();
                     for (Reservation reservation : entry.getValue()) {
                         if (reservation.getState() == ReservationState.PENDING) {
@@ -96,9 +96,9 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
         rides.values().forEach(ride -> {
             String rideName = ride.getName();
 
-            Map<Integer, Map<ParkLocalTime, List<Reservation>>> reservations = ride.getReservationsPerDay();
+            Map<Integer, Map<ParkLocalTime, Set<Reservation>>> reservations = ride.getReservationsPerDay();
 
-            for (Map.Entry<ParkLocalTime, List<Reservation>> entry : reservations.get(day).entrySet()) {
+            for (Map.Entry<ParkLocalTime, Set<Reservation>> entry : reservations.get(day).entrySet()) {
                 ParkLocalTime slot = entry.getKey();
                 for (Reservation reservation : entry.getValue()) {
                     if(reservation.getState() == ReservationState.CONFIRMED){
