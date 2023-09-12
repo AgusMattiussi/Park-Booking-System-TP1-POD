@@ -167,8 +167,11 @@ public class RideRepository {
     public AdminParkServiceOuterClass.SlotCapacityResponse addSlotsPerDay(String rideName, int day, int capacity){
         addSlotsExceptions(rideName, day, capacity);
         Ride ride = this.rides.get(rideName);
-//      si ya tiene una capacidad asignada falla, sino la agrega
+
+        //      si ya tiene una capacidad asignada falla, sino la agrega
         ride.setSlotCapacityPerDay(day, capacity);
+
+
 
         Map<Integer, Map<ParkLocalTime, List<Reservation>>> reservationsPerDay = ride.getReservationsPerDay();
 
@@ -180,6 +183,10 @@ public class RideRepository {
                 List<Reservation> reservationList = reservations.getValue();
                 for (int i = 0; i<reservationList.size(); i++){
                     Reservation r = reservationList.get(i);
+
+                    if(r.isRegisteredForNotifications())
+                        r.notifySlotsCapacityAdded(capacity);
+
                     UUID visitorId = r.getVisitorId();
                     Models.PassTypeEnum passType = this.parkPasses.get(visitorId).get(day).getType();
                     if (checkVisitorPass(passType, visitorId, reservationList, reservationTime)){
@@ -188,6 +195,10 @@ public class RideRepository {
                                 relocatedAmount +=1;
                             }else{
                                 r.confirm();
+
+                                if(r.isRegisteredForNotifications())
+                                    r.notifyConfirmed();
+
                                 acceptedAmount +=1;
                             }
                         }else{ // Si no me entran, trato de reubicar
@@ -205,6 +216,10 @@ public class RideRepository {
                                         r.relocate();
                                         afterReservations.add(r);
                                         reservationList.remove(r);
+
+                                        if(r.isRegisteredForNotifications())
+                                            r.notifyRelocated(reservationTime);
+
                                         break;
                                     }
                                 }
@@ -213,6 +228,10 @@ public class RideRepository {
                         // Si sigue pendiente es porque no la pude reubicar => cancelo
                         if(r.getState() == ReservationState.PENDING){
                             r.cancel();
+
+                            if(r.isRegisteredForNotifications())
+                                r.notifyCancelled();
+
                             ride.addCancelledReservations(r);
                             reservationList.remove(r);
                             cancelledAmount +=1;
@@ -386,13 +405,6 @@ public class RideRepository {
     }
 
     public void registerForNotifications(UUID visitorId, String rideName, int day, StreamObserver<NotifyServiceOuterClass.Notification> notificationObserver) {
-        /*
-        FAIL CONDITIONS:
-        - No ride under that name
-        - Invalid date
-        - Invalid pass
-        - Already registered for notification
-         */
         if (!rideExists(rideName))
             throw new RideNotFoundException("This ride does not exist");
 
@@ -407,7 +419,10 @@ public class RideRepository {
             throw new ReservationNotFoundException(String.format("No reservations for visitor %s for ride %s on day %d", visitorId, rideName, day));
 
         /* Register all reservations for notifications */
-        reservations.forEach(reservation -> reservation.registerForNotifications(notificationObserver));
+        reservations.forEach(reservation -> {
+            reservation.registerForNotifications(notificationObserver);
+            reservation.notifyRegistered();
+        });
     }
 
 
