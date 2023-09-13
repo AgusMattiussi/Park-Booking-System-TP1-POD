@@ -490,22 +490,17 @@ public class RideRepository {
                 ride.getSlotCapacityForDay(day));
     }
 
-    //FIXME: Los intervalos no son todos de 15 minutos
     private Map<ParkLocalTime, RideAvailability> getRideAvailability(String rideName, ParkLocalTime startTimeSlot, ParkLocalTime endTimeSlot, int day){
-        // TODO: Validar que los tiempos sean correctos (intervalos)
-        // TODO: Extraer esta validacion?
-        if (startTimeSlot.isAfter(endTimeSlot)) {
+        Ride ride = getRide(rideName);
+
+        if (startTimeSlot.isAfter(endTimeSlot))
             throw new IllegalArgumentException("Start time slot must be before end time slot");
-        }
 
         Map<ParkLocalTime, RideAvailability> timeSlotAvailability = new HashMap<>();
-        // TODO: Get Slots in range
-        ParkLocalTime currentTimeSlot = startTimeSlot;
-        while (currentTimeSlot.isBefore(endTimeSlot.plusMinutes(15))) {
-            timeSlotAvailability.put(currentTimeSlot, getRideAvailabilityForTimeSlot(rideName, currentTimeSlot, day));
+        List<ParkLocalTime> timeSlots = ride.getTimeSlotsBetween(startTimeSlot, endTimeSlot);
 
-            currentTimeSlot = currentTimeSlot.plusMinutes(15);
-        }
+        for (ParkLocalTime currentTimeSlot : timeSlots)
+            timeSlotAvailability.put(currentTimeSlot, getRideAvailabilityForTimeSlot(rideName, currentTimeSlot, day));
 
         return timeSlotAvailability;
     }
