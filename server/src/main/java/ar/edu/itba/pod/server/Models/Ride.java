@@ -24,11 +24,14 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
     private final RideTime rideTime;
     private final Map<Integer, Map<String, AtomicInteger>> slotsLeftByDayAndTimeSlot;
     private final Map<Integer, Integer> slotCapacityByDay;
+
+    private final ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> bookedSlots;
     public Ride(String name, RideTime rideTime) {
         this.name = name;
         this.rideTime = rideTime;
         this.slotsLeftByDayAndTimeSlot = new ConcurrentHashMap<>();
         this.slotCapacityByDay = new ConcurrentHashMap<>();
+        this.bookedSlots = new ConcurrentHashMap<>();
     }
 
     public String getName() {
@@ -89,6 +92,9 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
         return getSlotCapacityForDay(day) != -1;
     }
 
+    public ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> getBookedSlots() {
+        return bookedSlots;
+    }
 
     public void setSlotCapacityForDay(Integer day, Integer slotCapacity) {
         synchronized (slotCapacityByDay) {
@@ -97,15 +103,18 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
 
             slotCapacityByDay.put(day, slotCapacity);
 
-            if(!slotsLeftByDayAndTimeSlot.containsKey(day))
+            if(!slotsLeftByDayAndTimeSlot.containsKey(day)) {
                 slotsLeftByDayAndTimeSlot.put(day, new HashMap<>());
-
+                bookedSlots.put(day, new ConcurrentHashMap<>());
+            }
             Map<String, AtomicInteger> daySlots = slotsLeftByDayAndTimeSlot.get(day);
+            ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> bookedDaySlots = bookedSlots.get(day);
             List<String> times = rideTime.getTimeSlotsAsStrings();
 
 
             for(String time : times){
                 daySlots.put(time, new AtomicInteger(slotCapacity));
+                bookedDaySlots.put(time, new ConcurrentSkipListSet<>());
             }
         }
     }

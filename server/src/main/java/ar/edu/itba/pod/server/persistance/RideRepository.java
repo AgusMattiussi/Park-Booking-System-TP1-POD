@@ -25,17 +25,18 @@ public class RideRepository {
     private final ConcurrentMap<UUID, ConcurrentMap<Integer,ParkPass>> parkPasses;
     // TODO: Considerar cual es el caso de uso mas comun para definir el mapeo
     /* Maps ride name -> day -> time -> reservations */
-    private final ConcurrentMap<String, ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>>> bookedRides;
+//    private final ConcurrentMap<String, ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>>> bookedRides;
 
 
     private int acceptedAmount = 0;
+
     private int relocatedAmount = 0;
     private int cancelledAmount = 0;
 
     private RideRepository() {
         this.rides = new ConcurrentHashMap<>();
         this.parkPasses = new ConcurrentHashMap<>();
-        this.bookedRides = new ConcurrentHashMap<>();
+//        this.bookedRides = new ConcurrentHashMap<>();
 
         //TODO: Borrar
 //        rides.put("Space Mountain", new Ride("Space Mountain", new RideTime(ParkLocalTime.fromString("10:00"), ParkLocalTime.fromString("18:00")), 15));
@@ -175,7 +176,7 @@ public class RideRepository {
         ride.setSlotCapacityForDay(day, capacity);
 
 
-        ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> reservationsPerDay = bookedRides.get(rideName);
+        ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> reservationsPerDay = ride.getBookedSlots();
         ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> realocateReservations = new ConcurrentHashMap<>();
 
         if(reservationsPerDay!=null && reservationsPerDay.containsKey(day)){
@@ -325,7 +326,8 @@ public class RideRepository {
         return null;
     }
     public ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> getReservationsByDay(String rideName, int day){
-        ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> rideReservations = bookedRides.get(rideName);
+        Ride ride = rides.get(rideName);
+        ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> rideReservations = ride.getBookedSlots();
         if(rideReservations == null)
             return null;
 
@@ -333,7 +335,8 @@ public class RideRepository {
     }
 
     private ConcurrentSkipListSet<Reservation> initializeOrGetReservationsForSlot(String rideName, int day, String timeSlot){
-        ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> reservationsByDay = bookedRides.computeIfAbsent(rideName, k -> new ConcurrentHashMap<>());
+        Ride ride = rides.get(rideName);
+        ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> reservationsByDay = ride.getBookedSlots();
         ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> reservationsByTime = reservationsByDay.computeIfAbsent(day, k -> new ConcurrentHashMap<>());
         return reservationsByTime.computeIfAbsent(timeSlot, k -> new ConcurrentSkipListSet<>());
     }
