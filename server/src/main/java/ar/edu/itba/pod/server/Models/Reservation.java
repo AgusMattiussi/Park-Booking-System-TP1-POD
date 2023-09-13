@@ -11,6 +11,7 @@ import rideBooking.NotifyServiceOuterClass;
 public class Reservation implements Comparable<Reservation> {
     private final String rideName;
     private final UUID visitorId;
+    //TODO: Esto requiere lock si o si
     private ReservationState state;
     private final int day;
     private final ParkLocalTime time;
@@ -109,15 +110,15 @@ public class Reservation implements Comparable<Reservation> {
         notifyRelocated(previousTime.toString());
     }
 
-    public void confirm(){
+    public void setConfirmed(){
         setState(ReservationState.CONFIRMED);
     }
 
-    public void relocate(){
+    public void setRelocated(){
         setState(ReservationState.RELOCATED);
     }
 
-    public void cancel(){
+    public void setCanceled(){
         setState(ReservationState.CANCELLED);
     }
 

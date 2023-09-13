@@ -62,7 +62,7 @@ public class RideRepository {
         }
     }
 
-    private void checkPassExistance(UUID visitorId, int day){
+    private void checkPassExistence(UUID visitorId, int day){
         if(this.parkPasses.get(visitorId).containsKey(day)){
 //              si ya existe un pase para el visitante para el día indicado
             throw new AlreadyExistsException("There already exist a parkPass for the visitor for the day " + day);
@@ -127,7 +127,7 @@ public class RideRepository {
         validateDay(day);
         if(this.parkPasses.containsKey(visitorId)){
 //          si ya tiene un pase para ese dia
-            checkPassExistance(visitorId, day);
+            checkPassExistence(visitorId, day);
         }else{
             this.parkPasses.put(visitorId, new ConcurrentHashMap<>());
         }
@@ -194,7 +194,7 @@ public class RideRepository {
                             if(r.getState() == ReservationState.RELOCATED){
                                 relocatedAmount +=1;
                             }else{
-                                r.confirm();
+                                r.setConfirmed();
 
                                 if(r.isRegisteredForNotifications())
                                     r.notifyConfirmed();
@@ -213,7 +213,7 @@ public class RideRepository {
                                     Set<Reservation> afterReservations = afterTimeR.getValue();
                                     // Si tengo capacidad la reubico
                                     if(afterReservations.size() < capacity - 1){
-                                        r.relocate();
+                                        r.setRelocated();
                                         afterReservations.add(r);
                                         //TODO: No se si vale Remove en un for each
                                         reservationSet.remove(r);
@@ -228,7 +228,7 @@ public class RideRepository {
                         }
                         // Si sigue pendiente es porque no la pude reubicar => cancelo
                         if(r.getState() == ReservationState.PENDING){
-                            r.cancel();
+                            r.setCanceled();
 
                             if(r.isRegisteredForNotifications())
                                 r.notifyCancelled();
@@ -270,12 +270,12 @@ public class RideRepository {
             throw new InvalidTimeException(String.format("Time slot '%s' is invalid for ride '%s'", timeSlot, ride.getName()));
     }*/
 
-    private void validateRideTimeAndAccess(Ride ride, int dayOfTheYear, ParkLocalTime timeSlot, UUID visitorId){
+    private void validateRideTimeAndAccess(Ride ride, int day, ParkLocalTime timeSlot, UUID visitorId){
         if(!ride.isTimeSlotValid(timeSlot))
             throw new InvalidTimeException(String.format("Time slot '%s' is invalid for ride '%s'", timeSlot, ride.getName()));
 
-        if(!hasValidPass(visitorId, dayOfTheYear))
-            throw new PassNotFoundException(String.format("No valid pass for day %s", dayOfTheYear));
+        if(!hasValidPass(visitorId, day))
+            throw new PassNotFoundException(String.format("No valid pass for day %s", day));
     }
 
     public Map<String, Ride> getRides() {
@@ -295,15 +295,15 @@ public class RideRepository {
     }
 
     //TODO: Que pasa si me consultan por reservas y empiezan a crear nuevas?
-    private Set<Reservation> getUserReservationsByDay(String rideName, int dayOfTheYear, UUID visitorId){
+    private Set<Reservation> getUserReservationsByDay(String rideName, int day, UUID visitorId){
         bookedRides.putIfAbsent(rideName, new ConcurrentHashMap<>());
 
         Map<UUID, ConcurrentMap<Integer, ConcurrentSkipListSet<Reservation>>> rideBookedSlotsByUser = bookedRides.get(rideName);
         rideBookedSlotsByUser.putIfAbsent(visitorId, new ConcurrentHashMap<>());
 
         ConcurrentMap<Integer, ConcurrentSkipListSet<Reservation>> userBookedSlotsByDay = rideBookedSlotsByUser.get(visitorId);
-        userBookedSlotsByDay.putIfAbsent(dayOfTheYear, new ConcurrentSkipListSet<>());
-        return userBookedSlotsByDay.get(dayOfTheYear);
+        userBookedSlotsByDay.putIfAbsent(day, new ConcurrentSkipListSet<>());
+        return userBookedSlotsByDay.get(day);
     }
 
     /*
@@ -318,26 +318,32 @@ public class RideRepository {
      *
      */
     // TODO: Mover excepciones al Service?
-    public ReservationState bookRide(String rideName, int dayOfTheYear, ParkLocalTime timeSlot, UUID visitorId) {
+    public ReservationState bookRide(String rideName, int day, ParkLocalTime timeSlot, UUID visitorId) {
         Ride ride = getRide(rideName);
-        validateRideTimeAndAccess(ride, dayOfTheYear, timeSlot, visitorId);
+        validateRideTimeAndAccess(ride, day, timeSlot, visitorId);
         
-        Set<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
+        Set<Reservation> reservations = getUserReservationsByDay(rideName, day, visitorId);
 
-        ReservationState state = ride.isSlotCapacitySet(dayOfTheYear) ? ReservationState.CONFIRMED : ReservationState.PENDING;
-        Reservation reservation = new Reservation(rideName, visitorId, state, dayOfTheYear, timeSlot);
+        ReservationState state = ride.isSlotCapacitySet(day) ? ReservationState.CONFIRMED : ReservationState.PENDING;
+
+        if(ride.getSlotsLeft(day, timeSlot).get() == 0)
+            throw new ReservationLimitException(String.format("No more reservations available for ride '%s' on day %s at %s", rideName, day, timeSlot));
+
+
+        Reservation reservation = new Reservation(rideName, visitorId, state, day, timeSlot);
 
         if(reservations.contains(reservation))
             throw new AlreadyExistsException(String.format("Visitor '%s' already booked a ticket for '%s' at time slot '%s'", visitorId, rideName, timeSlot));
 
+        ride.decrementCapacity(day, timeSlot);
         reservations.add(reservation);
         return state;
     }
 
-    private Optional<Reservation> getReservation(String rideName, int dayOfTheYear, ParkLocalTime timeSlot, UUID visitorId){
-        Set<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
+    private Optional<Reservation> getReservation(String rideName, int day, ParkLocalTime timeSlot, UUID visitorId){
+        Set<Reservation> reservations = getUserReservationsByDay(rideName, day, visitorId);
         if(!reservations.isEmpty()) {
-            Reservation toFind = new Reservation(rideName, visitorId, ReservationState.UNKNOWN_STATE, dayOfTheYear, timeSlot);
+            Reservation toFind = new Reservation(rideName, visitorId, ReservationState.UNKNOWN_STATE, day, timeSlot);
 
             for (Reservation r : reservations) {
                 if (r.equals(toFind))
@@ -362,14 +368,14 @@ public class RideRepository {
      *  - Invalid time slot
      *
      */
-    public void confirmBooking(String rideName, int dayOfTheYear, ParkLocalTime timeSlot, UUID visitorId){
+    public void confirmBooking(String rideName, int day, ParkLocalTime timeSlot, UUID visitorId){
         Ride ride = getRide(rideName);
-        validateRideTimeAndAccess(ride, dayOfTheYear, timeSlot, visitorId);
+        validateRideTimeAndAccess(ride, day, timeSlot, visitorId);
 
-        if(!ride.isSlotCapacitySet(dayOfTheYear))
+        if(!ride.isSlotCapacitySet(day))
             throw new SlotCapacityException(String.format("Slot capacity not set for ride '%s'", rideName));
 
-        Reservation reservation = getReservation(rideName, dayOfTheYear, timeSlot, visitorId).orElseThrow(() ->
+        Reservation reservation = getReservation(rideName, day, timeSlot, visitorId).orElseThrow(() ->
                 new ReservationNotFoundException(String.format(
                         "Reservation not found for visitor '%s' at ride '%s' at time slot '%s'", visitorId, rideName, timeSlot)));
 
@@ -377,7 +383,7 @@ public class RideRepository {
             throw new AlreadyConfirmedException(String.format(
                     "Reservation for visitor '%s' at ride '%s' at time slot '%s' is already confirmed", visitorId, rideName, timeSlot));
 
-        reservation.confirm();
+        reservation.setConfirmed();
     }
 
     /*
@@ -391,12 +397,12 @@ public class RideRepository {
      *  - Invalid time slot
      *
      */
-    public void cancelBooking(String rideName, int dayOfTheYear, ParkLocalTime timeSlot, UUID visitorId) {
+    public void cancelBooking(String rideName, int day, ParkLocalTime timeSlot, UUID visitorId) {
         Ride ride = getRide(rideName);
-        validateRideTimeAndAccess(ride, dayOfTheYear, timeSlot, visitorId);
+        validateRideTimeAndAccess(ride, day, timeSlot, visitorId);
 
-        Set<Reservation> reservations = getUserReservationsByDay(rideName, dayOfTheYear, visitorId);
-        Reservation toRemove = new Reservation(rideName, visitorId, ReservationState.UNKNOWN_STATE, dayOfTheYear, timeSlot);
+        Set<Reservation> reservations = getUserReservationsByDay(rideName, day, visitorId);
+        Reservation toRemove = new Reservation(rideName, visitorId, ReservationState.UNKNOWN_STATE, day, timeSlot);
 
         if(!reservations.remove(toRemove))
             throw new ReservationNotFoundException(String.format(
@@ -473,7 +479,7 @@ public class RideRepository {
         }
 
         Map<ParkLocalTime, RideAvailability> timeSlotAvailability = new HashMap<>();
-
+        // TODO: Get Slots in range
         ParkLocalTime currentTimeSlot = startTimeSlot;
         while (currentTimeSlot.isBefore(endTimeSlot.plusMinutes(15))) {
             timeSlotAvailability.put(currentTimeSlot, getRideAvailabilityForTimeSlot(rideName, currentTimeSlot, day));

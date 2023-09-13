@@ -11,6 +11,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -21,18 +22,17 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
 
     private final String name;
     private final RideTime rideTime;
-    private final Map<Integer, AtomicInteger> slotsLeftByDay;
+    private final Map<Integer, Map<String, AtomicInteger>> slotsLeftByDayAndTimeSlot;
     private final Map<Integer, Integer> slotCapacityByDay;
-
+    //TODO: Volarlo
     private final Map<Integer, Map<ParkLocalTime, Set<Reservation>>> reservationsPerDay;
-
     //TODO: Ver si es necesario
     private final Set<Reservation> cancelledReservations;
 
     public Ride(String name, RideTime rideTime, int slotTime) {
         this.name = name;
         this.rideTime = rideTime;
-        this.slotsLeftByDay = new ConcurrentHashMap<>();
+        this.slotsLeftByDayAndTimeSlot = new ConcurrentHashMap<>();
         this.slotCapacityByDay = new ConcurrentHashMap<>();
         this.reservationsPerDay = new ConcurrentHashMap<>();
         //TODO: Concurrent
@@ -60,12 +60,16 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
         return slotCapacityByDay.getOrDefault(day, -1);
     }
 
-    public AtomicInteger getSlotsLeftForDay(int day) {
-        return slotsLeftByDay.getOrDefault(day, null);
+    public AtomicInteger getSlotsLeft(int day, String timeSlot) {
+        return slotsLeftByDayAndTimeSlot.getOrDefault(day, new HashMap<>()).getOrDefault(timeSlot, null);
     }
 
-    public void subtractOneSlotForDay(int day) {
-        AtomicInteger slotsLeft = getSlotsLeftForDay(day);
+    public AtomicInteger getSlotsLeft(int day, ParkLocalTime timeSlot) {
+        return getSlotsLeft(day, timeSlot.toString());
+    }
+
+    public void decrementCapacity(int day, ParkLocalTime timeSlot) {
+        AtomicInteger slotsLeft = getSlotsLeft(day, timeSlot);
 
         if(slotsLeft == null || !slotCapacityByDay.containsKey(day))
             throw new IllegalArgumentException(String.format("%s - Day %d has no capacity yet", name, day));
@@ -76,8 +80,8 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
         slotsLeft.decrementAndGet();
     }
 
-    public void addOneSlotForDay(int day){
-        AtomicInteger slotsLeft = getSlotsLeftForDay(day);
+    public void incrementCapacity(int day, ParkLocalTime timeSlot){
+        AtomicInteger slotsLeft = getSlotsLeft(day, timeSlot);
 
         if(slotsLeft == null || !slotCapacityByDay.containsKey(day))
             throw new IllegalArgumentException(String.format("%s - Day %d has no capacity yet", name, day));
@@ -117,7 +121,7 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
     }
 
     public boolean isSlotCapacitySet(Integer day) {
-        return getSlotsLeftForDay(day) != null;
+        return getSlotCapacityForDay(day) != -1;
     }
 
 
@@ -127,7 +131,16 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
                 throw new SlotCapacityException(String.format("Capacity is already set for day %d in ride %s", day, this.name));
 
             slotCapacityByDay.put(day, slotCapacity);
-            slotsLeftByDay.put(day, new AtomicInteger(slotCapacity));
+
+            if(!slotsLeftByDayAndTimeSlot.containsKey(day))
+                slotsLeftByDayAndTimeSlot.put(day, new HashMap<>());
+
+            Map<String, AtomicInteger> daySlots = slotsLeftByDayAndTimeSlot.get(day);
+            List<String> times = rideTime.getTimeSlotsAsStrings();
+
+            for(String time : times){
+                daySlots.put(time, new AtomicInteger(slotCapacity));
+            }
         }
     }
 

@@ -4,6 +4,8 @@ import rideBooking.Models;
 
 import java.time.Duration;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 //TODO: Clase privada de Ride?
 public class RideTime implements GRPCModel<Models.RideTime>{
@@ -19,6 +21,11 @@ public class RideTime implements GRPCModel<Models.RideTime>{
     }
 
     public RideTime(ParkLocalTime open, ParkLocalTime close, int durationInMinutes){
+        if(open.isAfter(close))
+            throw new IllegalArgumentException("Open time must be before close time");
+        if(durationInMinutes <= 0)
+            throw new IllegalArgumentException("Duration must be positive");
+
         this.open = open;
         this.close = close;
         this.timeSlotDuration = Duration.ofMinutes(durationInMinutes);
@@ -59,6 +66,16 @@ public class RideTime implements GRPCModel<Models.RideTime>{
 
     public boolean isTimeSlotValid(String timeSlot){
         return isTimeSlotValid(ParkLocalTime.fromString(timeSlot));
+    }
+
+    public List<String> getTimeSlotsAsStrings(){
+        List<String> timeSlots = new ArrayList<>();
+        ParkLocalTime current = open;
+        while(current.isBefore(close)){
+            timeSlots.add(current.toString());
+            current = current.plusMinutes(timeSlotDuration.toMinutes());
+        }
+        return timeSlots;
     }
 
 }
