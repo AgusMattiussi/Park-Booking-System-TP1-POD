@@ -41,7 +41,8 @@ public class RideAvailability implements Comparable<RideAvailability>, GRPCModel
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         RideAvailability that = (RideAvailability) o;
-        return pendingBookingsCount == that.pendingBookingsCount && confirmedBookingsCount == that.confirmedBookingsCount && Objects.equals(timeSlot, that.timeSlot);
+        return pendingBookingsCount == that.pendingBookingsCount && confirmedBookingsCount == that.confirmedBookingsCount
+                && timeSlot.equals(that.timeSlot);
     }
 
     @Override
@@ -57,8 +58,6 @@ public class RideAvailability implements Comparable<RideAvailability>, GRPCModel
 
     @Override
     public RideBookingServiceOuterClass.TimeSlotAvailability convertToGRPC() {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
-
         return RideBookingServiceOuterClass.TimeSlotAvailability.newBuilder()
                        .setTimeSlot(StringValue.of(timeSlot.toString()))
                        .setConfirmedBookings(Int32Value.of(confirmedBookingsCount))

@@ -3,6 +3,8 @@ package ar.edu.itba.pod.server.Models;
 import java.security.InvalidParameterException;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import io.grpc.stub.StreamObserver;
 import rideBooking.Models.ReservationState;
@@ -18,7 +20,8 @@ public class Reservation implements Comparable<Reservation> {
     private boolean shouldNotify;
     //TODO: Chequear thread-safety
     private StreamObserver<NotifyServiceOuterClass.Notification> notificationObserver;
-
+    private final Lock shouldNotifyLock;
+    
     public Reservation(String rideName, UUID visitorId, ReservationState state, int day, ParkLocalTime time) {
         this.rideName = rideName;
         this.visitorId = visitorId;
@@ -26,7 +29,8 @@ public class Reservation implements Comparable<Reservation> {
         this.day = day;
         this.time = time;
         this.shouldNotify = false;
-        notificationObserver = null;
+        this.notificationObserver = null;
+        this.shouldNotifyLock = new ReentrantLock();
     }
 
     public UUID getVisitorId() {
@@ -51,21 +55,29 @@ public class Reservation implements Comparable<Reservation> {
 
 
     public void registerForNotifications(StreamObserver<NotifyServiceOuterClass.Notification> notificationObserver) {
+        shouldNotifyLock.lock();
+
         if(shouldNotify)
             throw new InvalidParameterException("Reservation is already registered for notifications");
         shouldNotify = true;
 
         this.notificationObserver = notificationObserver;
+
+        shouldNotifyLock.unlock();
     }
 
     /* Returns the observer to be closed by the caller method */
     public StreamObserver<NotifyServiceOuterClass.Notification> unregisterForNotifications() {
+        shouldNotifyLock.lock();
+        
         if(!shouldNotify)
             throw new InvalidParameterException("Reservation is not registered for notifications");
         shouldNotify = false;
 
         StreamObserver<NotifyServiceOuterClass.Notification> aux = notificationObserver;
         this.notificationObserver = null;
+        
+        shouldNotifyLock.unlock();
         return aux;
     }
 

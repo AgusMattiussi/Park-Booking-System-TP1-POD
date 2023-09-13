@@ -16,6 +16,7 @@ import rideBooking.RideBookingServiceOuterClass;
 import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
@@ -43,12 +44,18 @@ public class BookingClient {
         final String action = argMap.get(ClientUtils.ACTION_NAME);;
         final String outPath = argMap.get(ClientUtils.OUTPATH);
 
-//        System.out.println("Input parameters:");
-//        argMap.forEach((key, value) -> {
-//            if(value != null)
-//                System.out.printf("%s: %s\n", key, value);
-//        });
-//        System.out.println();
+        if(serverAddress == null) {
+            logger.error("Server address not specified");
+            System.exit(1);
+        }
+        if(action == null) {
+            logger.error("Action nos specified");
+            System.exit(1);
+        }
+        if(outPath == null) {
+            logger.error("Output Path not specified");
+            System.exit(1);
+        }
 
         ManagedChannel channel = ClientUtils.buildChannel(serverAddress);
         RideBookingServiceGrpc.RideBookingServiceFutureStub stub = RideBookingServiceGrpc.newFutureStub(channel);
