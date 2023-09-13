@@ -29,7 +29,7 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
     private final Map<Integer, Integer> slotCapacityByDay;
 
     private final ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> bookedSlots;
-    public Ride(String name, RideTime rideTime, Integer slot) {
+    public Ride(String name, RideTime rideTime) {
         this.name = name;
         this.rideTime = rideTime;
         this.slotsLeftByDayAndTimeSlot = new ConcurrentHashMap<>();
