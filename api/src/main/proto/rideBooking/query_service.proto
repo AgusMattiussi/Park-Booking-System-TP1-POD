@@ -1,8 +1,5 @@
 syntax = "proto3";
 
-import "google/protobuf/wrappers.proto";
-import "google/protobuf/empty.proto";
-
 package rideBooking;
 
 service QueryService {
@@ -14,7 +11,7 @@ service QueryService {
 }
 
 message QueryDayRequest {
-  google.protobuf.StringValue day_of_year = 1;
+  string day_of_year = 1;
 }
 
 message CapacitySuggestionResponse {
@@ -22,9 +19,9 @@ message CapacitySuggestionResponse {
 }
 
 message CapacitySuggestion {
-  google.protobuf.StringValue ride_name = 1;
-  google.protobuf.Int32Value suggested_capacity = 2;
-  google.protobuf.StringValue slot = 3;
+  string ride_name = 1;
+  int32 suggested_capacity = 2;
+  string slot = 3;
 }
 
 message ConfirmedBookingsResponse {
@@ -32,8 +29,8 @@ message ConfirmedBookingsResponse {
 }
 
 message ConfirmedBooking {
-  google.protobuf.StringValue ride_name = 1;
-  google.protobuf.StringValue visitor_id = 2;
-  google.protobuf.StringValue slot = 3;
+  string ride_name = 1;
+  string visitor_id = 2;
+  string slot = 3;
 }
 

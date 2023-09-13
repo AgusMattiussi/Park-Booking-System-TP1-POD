@@ -1,6 +1,8 @@
 package ar.edu.itba.pod.server.Models;
 
 
+import ar.edu.itba.pod.server.exceptions.AlreadyExistsException;
+import ar.edu.itba.pod.server.exceptions.ReservationLimitException;
 import ar.edu.itba.pod.server.exceptions.SlotCapacityException;
 import ar.edu.itba.pod.server.passPersistance.ParkPassRepository;
 import com.google.protobuf.StringValue;
@@ -220,6 +222,34 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
         return AdminParkServiceOuterClass.SlotCapacityResponse.newBuilder()
                 .setAcceptedAmount(acceptedAmount).setCancelledAmount(cancelledAmount).setRelocatedAmount(relocatedAmount)
                 .build();
+    }
+
+    public ReservationState bookRide(int day, ParkLocalTime timeSlot, UUID visitorId) {
+        boolean isCapacitySet = this.isSlotCapacitySet(day);
+        if(isCapacitySet)
+            if(this.getSlotsLeft(day, timeSlot).get() == 0)
+                throw new ReservationLimitException(String.format("No more reservations available for ride '%s' on day %s at %s", this.name, day, timeSlot));
+
+        ConcurrentMap<Integer,ConcurrentMap<String,ConcurrentSkipListSet<Reservation>>> dayReservations = this.getBookedSlots();
+
+        dayReservations.putIfAbsent(day, new ConcurrentHashMap<>());
+
+        ConcurrentMap<String,ConcurrentSkipListSet<Reservation>> reservations = dayReservations.get(day);
+
+        ReservationState state = isCapacitySet ? ReservationState.CONFIRMED : ReservationState.PENDING;
+        Reservation reservation = new Reservation(this.name, visitorId, state, day, timeSlot);
+        String timeSlotString = timeSlot.toString();
+
+        reservations.putIfAbsent(timeSlotString, new ConcurrentSkipListSet<>());
+
+        if(reservations.get(timeSlotString).contains(reservation))
+            throw new AlreadyExistsException(String.format("Visitor '%s' already booked a ticket for '%s' at time slot '%s'", visitorId, this.name, timeSlot));
+
+        if(isCapacitySet)
+            this.decrementCapacity(day, timeSlot);
+
+        reservations.get(timeSlotString).add(reservation);
+        return state;
     }
 
 

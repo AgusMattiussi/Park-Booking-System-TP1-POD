@@ -18,9 +18,6 @@ public class QueryDayRequestModel {
     }
 
     public static QueryDayRequestModel fromQueryDayRequest(QueryServiceOuterClass.QueryDayRequest request){
-        if(!request.hasDayOfYear())
-            throw new IllegalArgumentException("Day of year must be specified");
-
-        return new QueryDayRequestModel(request.getDayOfYear().getValue());
+        return new QueryDayRequestModel(Integer.parseInt(request.getDayOfYear()));
     }
 }

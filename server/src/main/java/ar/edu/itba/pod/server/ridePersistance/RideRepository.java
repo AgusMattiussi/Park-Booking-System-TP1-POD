@@ -133,11 +133,6 @@ public class RideRepository {
         return rides.get(name);
     }
 
-    /*private void validateRideTimeSlot(Ride ride, ParkLocalTime timeSlot){
-        if(!ride.isTimeSlotValid(timeSlot))
-            throw new InvalidTimeException(String.format("Time slot '%s' is invalid for ride '%s'", timeSlot, ride.getName()));
-    }*/
-
     private void validateRideTimeAndAccess(Ride ride, int day, ParkLocalTime timeSlot, UUID visitorId){
         if(!ride.isTimeSlotValid(timeSlot))
             throw new InvalidTimeException(String.format("Time slot '%s' is invalid for ride '%s'", timeSlot, ride.getName()));
@@ -207,35 +202,7 @@ public class RideRepository {
 
         validateRideTimeAndAccess(ride, day, timeSlot, visitorId);
 
-        boolean isCapacitySet = ride.isSlotCapacitySet(day);
-
-        if(isCapacitySet)
-            if(ride.getSlotsLeft(day, timeSlot).get() == 0)
-                throw new ReservationLimitException(String.format("No more reservations available for ride '%s' on day %s at %s", rideName, day, timeSlot));
-
-
-        ConcurrentMap<Integer,ConcurrentMap<String,ConcurrentSkipListSet<Reservation>>> dayReservations = ride.getBookedSlots();
-
-
-        dayReservations.putIfAbsent(day, new ConcurrentHashMap<>());
-
-
-        ConcurrentMap<String,ConcurrentSkipListSet<Reservation>> reservations = dayReservations.get(day);
-
-        ReservationState state = isCapacitySet ? ReservationState.CONFIRMED : ReservationState.PENDING;
-        Reservation reservation = new Reservation(rideName, visitorId, state, day, timeSlot);
-        String timeSlotString = timeSlot.toString();
-
-        reservations.putIfAbsent(timeSlotString, new ConcurrentSkipListSet<>());
-
-        if(reservations.get(timeSlotString).contains(reservation))
-            throw new AlreadyExistsException(String.format("Visitor '%s' already booked a ticket for '%s' at time slot '%s'", visitorId, rideName, timeSlot));
-
-        if(isCapacitySet)
-            ride.decrementCapacity(day, timeSlot);
-
-        reservations.get(timeSlotString).add(reservation);
-        return state;
+        return ride.bookRide(day, timeSlot, visitorId);
     }
 
     private Optional<Reservation> getReservation(String rideName, int day, ParkLocalTime timeSlot, UUID visitorId){
