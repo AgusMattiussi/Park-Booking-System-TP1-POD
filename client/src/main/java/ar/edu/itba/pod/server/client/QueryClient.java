@@ -44,7 +44,7 @@ public class QueryClient {
 
                 ListenableFuture<QueryServiceOuterClass.CapacitySuggestionResponse> result = stub.queryCapacitySuggestion(
                         //TODO: Validar que no explote el parse
-                        QueryServiceOuterClass.QueryDayRequest.newBuilder().setDayOfYear(Int32Value.of(Integer.parseInt(day))).build()
+                        QueryServiceOuterClass.QueryDayRequest.newBuilder().setDayOfYear(StringValue.of(day)).build()
                 );
 
                 Futures.addCallback(result, new FutureCallback<>() {
@@ -66,7 +66,7 @@ public class QueryClient {
                 logger.info("Confirmed Bookings Query\n");
 
                 ListenableFuture<QueryServiceOuterClass.ConfirmedBookingsResponse> result = stub.queryConfirmedBookings(
-                        QueryServiceOuterClass.QueryDayRequest.newBuilder().setDayOfYear(Int32Value.of(Integer.parseInt(day))).build()
+                        QueryServiceOuterClass.QueryDayRequest.newBuilder().setDayOfYear(StringValue.of(day)).build()
                 );
 
                 Futures.addCallback(result, new FutureCallback<>() {

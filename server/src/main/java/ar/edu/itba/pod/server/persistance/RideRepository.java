@@ -171,25 +171,27 @@ public class RideRepository {
         addSlotsExceptions(rideName, day, capacity);
         Ride ride = this.rides.get(rideName);
 
-        //      si ya tiene una capacidad asignada falla, sino la agrega
+        // si ya tiene una capacidad asignada falla, sino la agrega
         ride.setSlotCapacityForDay(day, capacity);
 
 
         ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> reservationsPerDay = bookedRides.get(rideName);
         ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> realocateReservations = new ConcurrentHashMap<>();
 
-        if(reservationsPerDay.containsKey(day)){
+        if(reservationsPerDay!=null && reservationsPerDay.containsKey(day)){
             // Iterate over each member of the map
             Set<Map.Entry<String, ConcurrentSkipListSet<Reservation>>> entrySet = reservationsPerDay.get(day).entrySet();
             for (Map.Entry<String, ConcurrentSkipListSet<Reservation>> reservations: entrySet) {
-                ParkLocalTime reservationTime = ParkLocalTime.fromString(reservations.getKey());
+                String reservationTimeString = reservations.getKey();
+
+                ParkLocalTime reservationTime = ParkLocalTime.fromString(reservationTimeString);
                 ConcurrentSkipListSet<Reservation> reservationSet = reservations.getValue();
                 int count = 0;
 
 //                Si tengo para realocar lo hago
-                if(realocateReservations.containsKey(reservationTime.toString())){
-                    reservationSet.addAll(realocateReservations.get(reservationTime.toString()));
-                    realocateReservations.remove(reservationTime.toString());
+                if(realocateReservations.containsKey(reservationTimeString)){
+                    reservationSet.addAll(realocateReservations.get(reservationTimeString));
+                    realocateReservations.remove(reservationTimeString);
                     reservations.setValue(reservationSet);
                 }
 
@@ -216,7 +218,8 @@ public class RideRepository {
                             count++; // Se agrego uno mas
                         }else{ // Si no me entran, trato de reubicar
                             for (Map.Entry<String, ConcurrentSkipListSet<Reservation>>  afterTimeR: entrySet) {
-                                ParkLocalTime afterTime = ParkLocalTime.fromString(afterTimeR.getKey());
+                                String afterTimeString = afterTimeR.getKey();
+                                ParkLocalTime afterTime = ParkLocalTime.fromString(afterTimeString);
                                 Set<Reservation> afterReservations = afterTimeR.getValue();
                                 if(!checkVisitorPass(passType, visitorId, afterReservations, afterTime)) {
                                     // Chequeo el pase, y sino puedo salgo
@@ -225,16 +228,16 @@ public class RideRepository {
                                 // Solo intento slots posteriores al de la reserva original.
                                 if(afterTime.isAfter(reservationTime)){
                                     int realocated = 0;
-                                    if(realocateReservations.containsKey(afterTime.toString())){
-                                        realocated+=realocateReservations.get(afterTime.toString()).size();
+                                    if(realocateReservations.containsKey(afterTimeString)){
+                                        realocated=realocateReservations.get(afterTimeString).size();
                                     }
                                     // Si tengo capacidad la reubico (las reservas + las que quiero realocar ahi)
                                     if(afterReservations.size() + realocated < capacity){
                                         r.setRelocated();
-                                        if(!realocateReservations.containsKey(afterTime.toString())){
-                                            realocateReservations.put(afterTime.toString(), new ConcurrentSkipListSet<>());
+                                        if(!realocateReservations.containsKey(afterTimeString)){
+                                            realocateReservations.put(afterTimeString, new ConcurrentSkipListSet<>());
                                         }
-                                        realocateReservations.get(afterTime.toString()).add(r);
+                                        realocateReservations.get(afterTimeString).add(r);
 //                                      Cancel para la lista en la que estaba originalmente
                                         r.setCanceled();
 

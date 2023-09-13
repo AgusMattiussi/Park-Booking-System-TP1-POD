@@ -1,6 +1,5 @@
 package ar.edu.itba.pod.server.server;
 
-import ar.edu.itba.pod.server.Models.ParkLocalTime;
 import ar.edu.itba.pod.server.Models.ParkPass;
 import ar.edu.itba.pod.server.Models.Ride;
 import ar.edu.itba.pod.server.Models.RideTime;

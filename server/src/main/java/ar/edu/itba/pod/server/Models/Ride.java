@@ -103,6 +103,7 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
             Map<String, AtomicInteger> daySlots = slotsLeftByDayAndTimeSlot.get(day);
             List<String> times = rideTime.getTimeSlotsAsStrings();
 
+
             for(String time : times){
                 daySlots.put(time, new AtomicInteger(slotCapacity));
             }

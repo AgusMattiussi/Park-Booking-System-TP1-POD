@@ -54,6 +54,7 @@ public class AdminClient {
                 System.out.println(response);
             } catch (Exception e) {
                 System.out.println("Cannot add slot capacity for ride called " + rideName + '.');
+                System.out.println(e.getMessage());
             }
 
         }else{
