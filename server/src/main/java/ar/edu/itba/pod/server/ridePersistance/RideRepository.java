@@ -133,11 +133,6 @@ public class RideRepository {
         return rides.get(name);
     }
 
-    /*private void validateRideTimeSlot(Ride ride, ParkLocalTime timeSlot){
-        if(!ride.isTimeSlotValid(timeSlot))
-            throw new InvalidTimeException(String.format("Time slot '%s' is invalid for ride '%s'", timeSlot, ride.getName()));
-    }*/
-
     private void validateRideTimeAndAccess(Ride ride, int day, ParkLocalTime timeSlot, UUID visitorId){
         if(!ride.isTimeSlotValid(timeSlot))
             throw new InvalidTimeException(String.format("Time slot '%s' is invalid for ride '%s'", timeSlot, ride.getName()));
