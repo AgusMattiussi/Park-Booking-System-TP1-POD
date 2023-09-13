@@ -15,7 +15,6 @@ import rideBooking.RideBookingServiceGrpc;
 import rideBooking.RideBookingServiceOuterClass;
 import rideBooking.RideBookingServiceOuterClass.*;
 
-//TODO: Hace falta try catch aca?
 public class RideBookingService extends RideBookingServiceGrpc.RideBookingServiceImplBase {
 
     private final RideRepository rideRepository = RideRepository.getInstance();
@@ -79,7 +78,6 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
     public void confirmBooking(BookRideRequest request, StreamObserver<BookRideResponse> responseObserver) {
         BookRideRequestModel requestModel = BookRideRequestModel.fromBookRideRequest(request);
 
-        //TODO: Cambiar a boolean?
         rideRepository.confirmBooking(requestModel.getRideName(), requestModel.getDay(), requestModel.getTimeSlot(),
                 requestModel.getVisitorId());
 
@@ -91,7 +89,6 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
     public void cancelBooking(BookRideRequest request, StreamObserver<BookRideResponse> responseObserver) {
         BookRideRequestModel requestModel = BookRideRequestModel.fromBookRideRequest(request);
 
-        //TODO: Cambiar a boolean?
         rideRepository.cancelBooking(requestModel.getRideName(), requestModel.getDay(), requestModel.getTimeSlot(),
                 requestModel.getVisitorId());
 
