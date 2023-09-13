@@ -4,6 +4,7 @@ import ar.edu.itba.pod.server.client.utils.ClientUtils;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import io.grpc.ManagedChannel;
 import org.slf4j.Logger;
@@ -42,7 +43,8 @@ public class QueryClient {
                 logger.info("Capacity Suggestion Query\n");
 
                 ListenableFuture<QueryServiceOuterClass.CapacitySuggestionResponse> result = stub.queryCapacitySuggestion(
-                        QueryServiceOuterClass.QueryDayRequest.newBuilder().setDayOfYear(StringValue.of(day)).build()
+                        //TODO: Validar que no explote el parse
+                        QueryServiceOuterClass.QueryDayRequest.newBuilder().setDayOfYear(Int32Value.of(Integer.parseInt(day))).build()
                 );
 
                 Futures.addCallback(result, new FutureCallback<>() {
@@ -64,7 +66,7 @@ public class QueryClient {
                 logger.info("Confirmed Bookings Query\n");
 
                 ListenableFuture<QueryServiceOuterClass.ConfirmedBookingsResponse> result = stub.queryConfirmedBookings(
-                        QueryServiceOuterClass.QueryDayRequest.newBuilder().setDayOfYear(StringValue.of(day)).build()
+                        QueryServiceOuterClass.QueryDayRequest.newBuilder().setDayOfYear(Int32Value.of(Integer.parseInt(day))).build()
                 );
 
                 Futures.addCallback(result, new FutureCallback<>() {
