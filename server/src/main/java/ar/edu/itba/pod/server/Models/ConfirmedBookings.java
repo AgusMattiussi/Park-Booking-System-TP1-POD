@@ -1,6 +1,5 @@
 package ar.edu.itba.pod.server.Models;
 
-import com.google.protobuf.StringValue;
 import rideBooking.QueryServiceOuterClass;
 
 public class ConfirmedBookings implements GRPCModel<rideBooking.QueryServiceOuterClass.ConfirmedBooking>{
@@ -29,9 +28,9 @@ public class ConfirmedBookings implements GRPCModel<rideBooking.QueryServiceOute
     @Override
     public QueryServiceOuterClass.ConfirmedBooking convertToGRPC() {
         return QueryServiceOuterClass.ConfirmedBooking.newBuilder()
-                .setRideName(StringValue.of(rideName))
-                .setVisitorId(StringValue.of(visitorID))
-                .setSlot(StringValue.of(slot))
+                .setRideName(rideName)
+                .setVisitorId(visitorID)
+                .setSlot(slot)
                 .build();
     }
 }
