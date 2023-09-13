@@ -4,6 +4,7 @@ import ar.edu.itba.pod.server.Models.ParkLocalTime;
 import ar.edu.itba.pod.server.Models.ParkPass;
 import ar.edu.itba.pod.server.Models.Ride;
 import ar.edu.itba.pod.server.Models.RideTime;
+import ar.edu.itba.pod.server.Models.requests.AddRideRequestModel;
 import ar.edu.itba.pod.server.persistance.RideRepository;
 import com.google.protobuf.BoolValue;
 import io.grpc.stub.StreamObserver;
@@ -22,11 +23,13 @@ public class AdminParkServer extends AdminParkServiceGrpc.AdminParkServiceImplBa
 
     @Override
     public void addRide(AddRideRequest request, StreamObserver<BoolValue> responseObserver) {
-        ParkLocalTime openTime = ParkLocalTime.fromString(request.getRideTime().getOpen());
-        ParkLocalTime closeTime = ParkLocalTime.fromString(request.getRideTime().getClose());
-        int timeSlotDuration = request.getSlotMinutes();
+        AddRideRequestModel requestModel = AddRideRequestModel.fromAddRideRequest(request);
 
-        Optional<Ride> newRide = repository.addRide(request.getRideName(), new RideTime(openTime, closeTime, timeSlotDuration), request.getSlotMinutes());
+
+        Optional<Ride> newRide = repository.addRide(requestModel.getRideName(),
+                new RideTime(requestModel.getStartTime(), requestModel.getEndTime(), requestModel.getSlotMinutes()),
+                requestModel.getSlotMinutes());
+
         newRide.ifPresentOrElse(
                 ride -> {
                     responseObserver.onNext(BoolValue.of(true));
@@ -35,8 +38,7 @@ public class AdminParkServer extends AdminParkServiceGrpc.AdminParkServiceImplBa
                 () -> {
                     responseObserver.onNext(BoolValue.of(false));
                     responseObserver.onCompleted();
-                    final String msg = "Could not create Ride " + request.getRideName();
-                    logger.error(msg);
+                    logger.error(String.format("Could not create Ride %s", requestModel.getRideName()));
                 }
         );
     }
