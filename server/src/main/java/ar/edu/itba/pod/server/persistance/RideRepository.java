@@ -358,18 +358,23 @@ public class RideRepository {
 
         validateRideTimeAndAccess(ride, day, timeSlot, visitorId);
 
-        if(ride.getSlotsLeft(day, timeSlot).get() == 0)
-            throw new ReservationLimitException(String.format("No more reservations available for ride '%s' on day %s at %s", rideName, day, timeSlot));
+        boolean isCapacitySet = ride.isSlotCapacitySet(day);
+
+        if(isCapacitySet)
+            if(ride.getSlotsLeft(day, timeSlot).get() == 0)
+                throw new ReservationLimitException(String.format("No more reservations available for ride '%s' on day %s at %s", rideName, day, timeSlot));
 
         ConcurrentSkipListSet<Reservation> reservations = initializeOrGetReservationsForSlot(rideName, day, timeSlot.toString());
 
-        ReservationState state = ride.isSlotCapacitySet(day) ? ReservationState.CONFIRMED : ReservationState.PENDING;
+        ReservationState state = isCapacitySet ? ReservationState.CONFIRMED : ReservationState.PENDING;
         Reservation reservation = new Reservation(rideName, visitorId, state, day, timeSlot);
 
         if(reservations.contains(reservation))
             throw new AlreadyExistsException(String.format("Visitor '%s' already booked a ticket for '%s' at time slot '%s'", visitorId, rideName, timeSlot));
 
-        ride.decrementCapacity(day, timeSlot);
+        if(isCapacitySet)
+            ride.decrementCapacity(day, timeSlot);
+
         reservations.add(reservation);
         return state;
     }
