@@ -4,7 +4,7 @@ import ar.edu.itba.pod.server.Models.ParkLocalTime;
 import ar.edu.itba.pod.server.Models.RideAvailability;
 import ar.edu.itba.pod.server.Models.requests.BookRideRequestModel;
 import ar.edu.itba.pod.server.Models.requests.GetRideAvailabilityRequestModel;
-import ar.edu.itba.pod.server.persistance.RideRepository;
+import ar.edu.itba.pod.server.ridePersistance.RideRepository;
 import com.google.protobuf.Empty;
 import com.google.protobuf.StringValue;
 import io.grpc.stub.StreamObserver;

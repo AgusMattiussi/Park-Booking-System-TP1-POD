@@ -2,7 +2,7 @@ package ar.edu.itba.pod.server.server;
 
 import ar.edu.itba.pod.server.Models.*;
 import ar.edu.itba.pod.server.Models.requests.QueryDayRequestModel;
-import ar.edu.itba.pod.server.persistance.RideRepository;
+import ar.edu.itba.pod.server.ridePersistance.RideRepository;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

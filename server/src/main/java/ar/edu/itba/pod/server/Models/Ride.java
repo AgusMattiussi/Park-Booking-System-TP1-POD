@@ -2,7 +2,10 @@ package ar.edu.itba.pod.server.Models;
 
 
 import ar.edu.itba.pod.server.exceptions.SlotCapacityException;
+import ar.edu.itba.pod.server.passPersistance.ParkPassRepository;
 import com.google.protobuf.StringValue;
+import rideBooking.AdminParkServiceOuterClass;
+import rideBooking.Models;
 import rideBooking.RideBookingServiceOuterClass;
 import rideBooking.Models.ReservationState;
 
@@ -24,11 +27,14 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
     private final RideTime rideTime;
     private final Map<Integer, Map<String, AtomicInteger>> slotsLeftByDayAndTimeSlot;
     private final Map<Integer, Integer> slotCapacityByDay;
-    public Ride(String name, RideTime rideTime) {
+
+    private final ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> bookedSlots;
+    public Ride(String name, RideTime rideTime, Integer slot) {
         this.name = name;
         this.rideTime = rideTime;
         this.slotsLeftByDayAndTimeSlot = new ConcurrentHashMap<>();
         this.slotCapacityByDay = new ConcurrentHashMap<>();
+        this.bookedSlots = new ConcurrentHashMap<>();
     }
 
     public String getName() {
@@ -51,6 +57,7 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
     public int getSlotCapacityForDay(int day) {
         return slotCapacityByDay.getOrDefault(day, -1);
     }
+
 
     public AtomicInteger getSlotsLeft(int day, String timeSlot) {
         return slotsLeftByDayAndTimeSlot.getOrDefault(day, new HashMap<>()).getOrDefault(timeSlot, null);
@@ -89,6 +96,9 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
         return getSlotCapacityForDay(day) != -1;
     }
 
+    public ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> getBookedSlots() {
+        return bookedSlots;
+    }
 
     public void setSlotCapacityForDay(Integer day, Integer slotCapacity) {
         synchronized (slotCapacityByDay) {
@@ -97,15 +107,17 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
 
             slotCapacityByDay.put(day, slotCapacity);
 
-            if(!slotsLeftByDayAndTimeSlot.containsKey(day))
-                slotsLeftByDayAndTimeSlot.put(day, new HashMap<>());
+            slotsLeftByDayAndTimeSlot.putIfAbsent(day, new HashMap<>());
+            bookedSlots.putIfAbsent(day, new ConcurrentHashMap<>());
 
             Map<String, AtomicInteger> daySlots = slotsLeftByDayAndTimeSlot.get(day);
+            ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> bookedDaySlots = bookedSlots.get(day);
             List<String> times = rideTime.getTimeSlotsAsStrings();
 
 
             for(String time : times){
                 daySlots.put(time, new AtomicInteger(slotCapacity));
+                bookedDaySlots.putIfAbsent(time, new ConcurrentSkipListSet<>());
             }
         }
     }
@@ -120,6 +132,94 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
 
     public List<ParkLocalTime> getTimeSlotsBetween(ParkLocalTime startTimeSlot, ParkLocalTime endTimeSlot){
         return rideTime.getTimeSlotsBetween(startTimeSlot, endTimeSlot);
+    }
+
+    public AdminParkServiceOuterClass.SlotCapacityResponse addSlotCapacityPerDay(ParkPassRepository parkPassInstance, int day, int capacity){
+        // si ya tiene una capacidad asignada falla, sino la agrega
+        setSlotCapacityForDay(day, capacity);
+
+        int acceptedAmount = 0;
+        int relocatedAmount = 0;
+        int cancelledAmount = 0;
+
+        ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> realocateReservations = new ConcurrentHashMap<>();
+
+        if(bookedSlots.containsKey(day)){
+            List<String> timeSlots = rideTime.getTimeSlotsAsStrings();
+            for (int i =0 ; i< timeSlots.size(); i++) {
+                String timeSlot = timeSlots.get(i);
+                ParkLocalTime parkLocalTime =  ParkLocalTime.fromString(timeSlot);
+                ConcurrentSkipListSet<Reservation> reservations = bookedSlots.get(day).get(timeSlot);
+
+                // Si tengo para realocar lo hago
+                if(realocateReservations.containsKey(timeSlot)){
+                    reservations.addAll(realocateReservations.get(timeSlot));
+                    realocateReservations.remove(timeSlot);
+                }
+
+                for (Reservation r: reservations) {
+
+                    if(r.isRegisteredForNotifications())
+                        r.notifySlotsCapacityAdded(capacity);
+
+                    UUID visitorId = r.getVisitorId();
+                    Models.PassTypeEnum passType = parkPassInstance.getVisitorParkType(visitorId, day);
+
+                    if (parkPassInstance.checkVisitorPass(passType, visitorId, reservations, parkLocalTime)) {
+                        if (getSlotsLeft(day, parkLocalTime).get() > 0) { // Si tengo lugar para guardar, guardo
+                            if (r.getState() == ReservationState.RELOCATED) {
+                                relocatedAmount += 1;
+                            } else {
+                                r.setConfirmed();
+                                if (r.isRegisteredForNotifications())
+                                    r.notifyConfirmed();
+                                acceptedAmount += 1;
+                            }
+                            decrementCapacity(day, parkLocalTime);
+                        }else{
+                            for(String after :timeSlots.subList(i + 1, timeSlots.size())){
+                                ParkLocalTime afterTime =  ParkLocalTime.fromString(after);
+                                ConcurrentSkipListSet<Reservation> afterReservations = bookedSlots.get(day).get(after);
+                                if(!parkPassInstance.checkVisitorPass(passType, visitorId, afterReservations, afterTime)) {
+                                    // Chequeo el pase, y sino puedo salgo
+                                    break;
+                                }
+                                // Cuantas ya tengo reubicadas aca
+                                int realocated = 0;
+                                if(realocateReservations.containsKey(after)){
+                                    realocated=realocateReservations.get(after).size();
+                                }
+                                // Si tengo capacidad la reubico (las reservas + las que quiero realocar ahi)
+                                if(afterReservations.size() + realocated < capacity){
+                                    r.setRelocated();
+                                    realocateReservations.putIfAbsent(after, new ConcurrentSkipListSet<>());
+                                    realocateReservations.get(after).add(r);
+
+                                    if(r.isRegisteredForNotifications())
+                                        r.notifyRelocated(parkLocalTime);
+                                    break;
+                                }
+                            }
+                            // Si sigue pendiente es porque no la pude reubicar => cancelo
+                            if(r.getState() == ReservationState.PENDING){
+                                r.setCanceled();
+
+                                if(r.isRegisteredForNotifications())
+                                    r.notifyCancelled();
+                                cancelledAmount +=1;
+                            }
+                        }
+                    }
+
+                }
+                // Elimino todas las reservas canceladas o q se realocaron en otra
+                reservations.removeIf(reserv -> (reserv.getState().equals(ReservationState.CANCELLED) || reserv.getState().equals(ReservationState.RELOCATED)));
+            }
+        }
+
+        return AdminParkServiceOuterClass.SlotCapacityResponse.newBuilder()
+                .setAcceptedAmount(acceptedAmount).setCancelledAmount(cancelledAmount).setRelocatedAmount(relocatedAmount)
+                .build();
     }
 
 
