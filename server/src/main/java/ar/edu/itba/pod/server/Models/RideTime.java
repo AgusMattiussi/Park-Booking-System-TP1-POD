@@ -107,4 +107,12 @@ public class RideTime implements GRPCModel<Models.RideTime>{
         return timeSlots;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if(!(obj instanceof RideTime))
+            return false;
+
+        RideTime other = (RideTime) obj;
+        return open.equals(other.open) && close.equals(other.close) && timeSlotDuration.equals(other.timeSlotDuration);
+    }
 }

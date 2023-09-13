@@ -567,4 +567,8 @@ public class RideRepository {
     public int getPendingCountForTimeSlot(String rideName, int day, ParkLocalTime timeSlot) {
         return countStateForTimeSlot(rideName, day, timeSlot, ReservationState.PENDING);
     }
+
+    public ConcurrentMap<UUID, ConcurrentMap<Integer, ParkPass>> getParkPasses() {
+        return parkPasses;
+    }
 }
