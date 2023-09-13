@@ -24,19 +24,11 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
     private final RideTime rideTime;
     private final Map<Integer, Map<String, AtomicInteger>> slotsLeftByDayAndTimeSlot;
     private final Map<Integer, Integer> slotCapacityByDay;
-    //TODO: Volarlo
-    private final Map<Integer, Map<ParkLocalTime, Set<Reservation>>> reservationsPerDay;
-    //TODO: Ver si es necesario
-    private final Set<Reservation> canceledReservations;
-
-    public Ride(String name, RideTime rideTime, int slotTime) {
+    public Ride(String name, RideTime rideTime) {
         this.name = name;
         this.rideTime = rideTime;
         this.slotsLeftByDayAndTimeSlot = new ConcurrentHashMap<>();
         this.slotCapacityByDay = new ConcurrentHashMap<>();
-        this.reservationsPerDay = new ConcurrentHashMap<>();
-        //TODO: Concurrent
-        this.canceledReservations = new ConcurrentSkipListSet<>();
     }
 
     public String getName() {
@@ -92,45 +84,6 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
         slotsLeft.incrementAndGet();
     }
 
-    public Map<Integer, Map<ParkLocalTime, Set<Reservation>>> getReservationsPerDay() {
-        return reservationsPerDay;
-    }
-
-    public void addReservationForDay(Reservation reservation) {
-        int day = reservation.getDay();
-        ParkLocalTime timeSlot = reservation.getTime();
-
-        if (!reservationsPerDay.containsKey(day))
-            reservationsPerDay.put(day, new ConcurrentHashMap<>());
-
-        if (!reservationsPerDay.get(day).containsKey(timeSlot))
-            reservationsPerDay.get(day).put(timeSlot, new ConcurrentSkipListSet<>());
-
-        reservationsPerDay.get(day).get(timeSlot).add(reservation);
-    }
-
-    private Optional<Set<Reservation>> getReservationsForTimeSlot(int day, ParkLocalTime timeSlot) {
-        Optional<Set<Reservation>> optional = Optional.empty();
-        if (reservationsPerDay.containsKey(day) && reservationsPerDay.get(day).containsKey(timeSlot))
-            optional = Optional.of(reservationsPerDay.get(day).get(timeSlot));
-        return optional;
-    }
-
-    private int countStateForTimeSlot(int day, ParkLocalTime timeSlot, ReservationState state) {
-        Optional<Set<Reservation>> reservations = getReservationsForTimeSlot(day, timeSlot);
-
-        return reservations.map(reservationList -> (int) reservationList.stream().filter(
-                reservation -> reservation.getState() == state).count())
-                .orElse(0);
-    }
-
-    public int getConfirmedCountForTimeSlot(int day, ParkLocalTime timeSlot) {
-        return countStateForTimeSlot(day, timeSlot, ReservationState.CONFIRMED);
-    }
-
-    public int getPendingCountForTimeSlot(int day, ParkLocalTime timeSlot) {
-        return countStateForTimeSlot(day, timeSlot, ReservationState.PENDING);
-    }
 
     public boolean isSlotCapacitySet(Integer day) {
         return getSlotCapacityForDay(day) != -1;
@@ -156,16 +109,16 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
         }
     }
 
-    public void addCancelledReservations(Reservation cancelledReservation) {
-        canceledReservations.add(cancelledReservation);
-    }
-
     public boolean isTimeSlotValid(ParkLocalTime time) {
         return rideTime.isTimeSlotValid(time);
     }
 
     public boolean isTimeSlotValid(String time) {
         return rideTime.isTimeSlotValid(time);
+    }
+
+    public List<ParkLocalTime> getTimeSlotsBetween(ParkLocalTime startTimeSlot, ParkLocalTime endTimeSlot){
+        return rideTime.getTimeSlotsBetween(startTimeSlot, endTimeSlot);
     }
 
 
