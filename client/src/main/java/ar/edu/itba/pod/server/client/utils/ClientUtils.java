@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.Map;
 public final class ClientUtils {
     private final static Logger logger = LoggerFactory.getLogger(ClientUtils.class);
-
     public final static String INPUT_PATH = "inPath";
     public final static String SERVER_ADDRESS = "serverAddress";
     public final static String ACTION_NAME = "action";
@@ -28,7 +27,6 @@ public final class ClientUtils {
     public final static String OUTPATH = "outPath";
     public static final String BOOKING_SLOT = "slot";
     public static final String BOOKING_SLOT_TO = "slotTo";
-
 
     public static ManagedChannel buildChannel(String serverAddress){
         return ManagedChannelBuilder.forTarget(serverAddress)
@@ -58,9 +56,8 @@ public final class ClientUtils {
             writer.write(content);
             writer.close();
         } catch (IOException e) {
-            System.err.println("Error creating output file");
+            logger.error("Error creating output file");
         }
     }
-
 }
 

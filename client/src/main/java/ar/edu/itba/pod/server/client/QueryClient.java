@@ -55,9 +55,8 @@ public class QueryClient {
 
                     @Override
                     public void onFailure(Throwable throwable) {
-                        System.out.println("Error\n");
                         latch.countDown();
-                        System.err.println(throwable.getMessage());
+                        logger.error(throwable.getMessage());
                     }}, Runnable::run);
             }
             case "confirmed" -> {
@@ -77,16 +76,15 @@ public class QueryClient {
 
                     @Override
                     public void onFailure(Throwable throwable) {
-                        System.out.println("Error\n");
                         latch.countDown();
-                        System.err.println(throwable.getMessage());
+                        logger.error(throwable.getMessage());
                     }}, Runnable::run);
             }
             default -> logger.error("Invalid action");
         }
 
         try {
-            System.out.println("Waiting for response...");
+            logger.info("Waiting for response ...");
             latch.await();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
