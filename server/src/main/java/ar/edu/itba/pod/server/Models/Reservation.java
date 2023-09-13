@@ -130,7 +130,10 @@ public class Reservation implements Comparable<Reservation> {
     public int compareTo(Reservation other) {
         int comp = Integer.compare(this.day, other.day);
         if (comp == 0) {
-            return this.time.compareTo(other.time);
+            comp = this.time.compareTo(other.time);
+            if(comp == 0){
+                return this.visitorId.compareTo(other.visitorId);
+            }
         }
         return comp;
     }

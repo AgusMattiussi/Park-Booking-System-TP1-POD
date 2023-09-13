@@ -2,6 +2,7 @@ package ar.edu.itba.pod.server.persistance;
 
 import ar.edu.itba.pod.server.Models.*;
 import ar.edu.itba.pod.server.exceptions.*;
+import com.sun.source.tree.Tree;
 import io.grpc.stub.StreamObserver;
 import rideBooking.AdminParkServiceOuterClass;
 import rideBooking.Models;
@@ -13,6 +14,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.stream.Collectors;
 
 public class RideRepository {
 
@@ -23,7 +25,7 @@ public class RideRepository {
     private final ConcurrentMap<UUID, ConcurrentMap<Integer,ParkPass>> parkPasses;
     // TODO: Considerar cual es el caso de uso mas comun para definir el mapeo
     /* Maps ride names to a map of <User ID, List of reservations> */
-    private final ConcurrentMap<String, ConcurrentMap<UUID, ConcurrentMap<Integer, ConcurrentSkipListSet<Reservation>>>> bookedRides;
+    private final ConcurrentMap<String, ConcurrentMap<Integer, ConcurrentSkipListSet<Reservation>>> bookedRides;
 
 
     private int acceptedAmount = 0;
@@ -164,6 +166,7 @@ public class RideRepository {
         return passType == Models.PassTypeEnum.UNLIMITED || passes < 3;
     }
 
+    //TODO: Arreglar
     public AdminParkServiceOuterClass.SlotCapacityResponse addSlotsPerDay(String rideName, int day, int capacity){
         addSlotsExceptions(rideName, day, capacity);
         Ride ride = this.rides.get(rideName);
@@ -295,16 +298,19 @@ public class RideRepository {
     }
 
     //TODO: Que pasa si me consultan por reservas y empiezan a crear nuevas?
-    private Set<Reservation> getUserReservationsByDay(String rideName, int day, UUID visitorId){
-        bookedRides.putIfAbsent(rideName, new ConcurrentHashMap<>());
+    private NavigableSet<Reservation> getReservationsByDay(String rideName, int day){
+        ConcurrentMap<Integer, ConcurrentSkipListSet<Reservation>> rideReservations = bookedRides.get(rideName);
+        if(rideReservations == null)
+            return null;
 
-        Map<UUID, ConcurrentMap<Integer, ConcurrentSkipListSet<Reservation>>> rideBookedSlotsByUser = bookedRides.get(rideName);
-        rideBookedSlotsByUser.putIfAbsent(visitorId, new ConcurrentHashMap<>());
-
-        ConcurrentMap<Integer, ConcurrentSkipListSet<Reservation>> userBookedSlotsByDay = rideBookedSlotsByUser.get(visitorId);
-        userBookedSlotsByDay.putIfAbsent(day, new ConcurrentSkipListSet<>());
-        return userBookedSlotsByDay.get(day);
+        return rideReservations.get(day);
     }
+
+    private ConcurrentSkipListSet<Reservation> initializeOrGetReservationsForDay(String rideName, int day){
+        ConcurrentMap<Integer, ConcurrentSkipListSet<Reservation>> rideReservations = bookedRides.computeIfAbsent(rideName, k -> new ConcurrentHashMap<>());
+        return rideReservations.computeIfAbsent(day, k -> new ConcurrentSkipListSet<>());
+    }
+
 
     /*
      *  Books a ride for a visitor
@@ -317,19 +323,22 @@ public class RideRepository {
      *  - Invalid time slot
      *
      */
-    // TODO: Mover excepciones al Service?
+    // TODO: Agregar locks para el caso donde dos hilos piensan que queda 1 slot y ambos lo reservan
     public ReservationState bookRide(String rideName, int day, ParkLocalTime timeSlot, UUID visitorId) {
         Ride ride = getRide(rideName);
-        validateRideTimeAndAccess(ride, day, timeSlot, visitorId);
-        
-        Set<Reservation> reservations = getUserReservationsByDay(rideName, day, visitorId);
+        if(ride == null)
+            throw new RideNotFoundException(String.format("Ride '%s' does not exist", rideName));
 
-        ReservationState state = ride.isSlotCapacitySet(day) ? ReservationState.CONFIRMED : ReservationState.PENDING;
+        validateRideTimeAndAccess(ride, day, timeSlot, visitorId);
 
         if(ride.getSlotsLeft(day, timeSlot).get() == 0)
             throw new ReservationLimitException(String.format("No more reservations available for ride '%s' on day %s at %s", rideName, day, timeSlot));
 
 
+
+        ConcurrentSkipListSet<Reservation> reservations = initializeOrGetReservationsForDay(rideName, day);
+
+        ReservationState state = ride.isSlotCapacitySet(day) ? ReservationState.CONFIRMED : ReservationState.PENDING;
         Reservation reservation = new Reservation(rideName, visitorId, state, day, timeSlot);
 
         if(reservations.contains(reservation))
@@ -342,17 +351,23 @@ public class RideRepository {
     }
 
     private Optional<Reservation> getReservation(String rideName, int day, ParkLocalTime timeSlot, UUID visitorId){
-        Set<Reservation> reservations = getUserReservationsByDay(rideName, day, visitorId);
-        if(!reservations.isEmpty()) {
-            Reservation toFind = new Reservation(rideName, visitorId, ReservationState.UNKNOWN_STATE, day, timeSlot);
-
-            for (Reservation r : reservations) {
-                if (r.equals(toFind))
-                    return Optional.of(r);
-            }
+        NavigableSet<Reservation> reservations = getReservationsByDay(rideName, day);
+        if(reservations != null) {
+            /* It is more efficient to create a new reservation and compare it to the ones in the set than filtering the set */
+            Reservation reservation = new Reservation(rideName, visitorId, ReservationState.UNKNOWN_STATE, day, timeSlot);
+            if (reservations.contains(reservation))
+                return Optional.of(reservations.floor(reservation));  // Will not return null because the reservation is in the set
         }
-
         return Optional.empty();
+    }
+
+    // FIXME: Muy costoso. Tiene sentido agregar otro nivel de indireccion para que sea mas eficiente?
+    private List<Reservation> getUserReservationsByDay(String rideName, int day, UUID visitorId){
+        NavigableSet<Reservation> reservations = getReservationsByDay(rideName, day);
+        if(reservations != null) {
+            return reservations.stream().filter(res -> res.getVisitorId().equals(visitorId)).collect(Collectors.toList());
+        }
+        return null;
     }
 
 
@@ -402,10 +417,10 @@ public class RideRepository {
         Ride ride = getRide(rideName);
         validateRideTimeAndAccess(ride, day, timeSlot, visitorId);
 
-        Set<Reservation> reservations = getUserReservationsByDay(rideName, day, visitorId);
         Reservation toRemove = new Reservation(rideName, visitorId, ReservationState.UNKNOWN_STATE, day, timeSlot);
 
-        if(!reservations.remove(toRemove))
+        Set<Reservation> reservations = getReservationsByDay(rideName, day);
+        if(reservations == null || !reservations.remove(toRemove))
             throw new ReservationNotFoundException(String.format(
                     "Reservation not found for visitor '%s' at ride '%s' at time slot '%s'", visitorId, rideName, timeSlot));
     }
@@ -415,7 +430,7 @@ public class RideRepository {
         return this.parkPasses.containsKey(visitorId) && this.parkPasses.get(visitorId).containsKey(day);
     }
 
-    public void registerForNotifications(UUID visitorId, String rideName, int day, StreamObserver<NotifyServiceOuterClass.Notification> notificationObserver) {
+    private List<Reservation> getUserReservationsByDayAndValidateParameters(UUID visitorId, String rideName, int day){
         if (!rideExists(rideName))
             throw new RideNotFoundException("This ride does not exist");
 
@@ -425,9 +440,15 @@ public class RideRepository {
             throw new PassNotFoundException("No valid pass for day " + day);
 
 
-        Set<Reservation> reservations = getUserReservationsByDay(rideName, day, visitorId);
+        List<Reservation> reservations = getUserReservationsByDay(rideName, day, visitorId);
         if(reservations == null || reservations.isEmpty())
             throw new ReservationNotFoundException(String.format("No reservations for visitor %s for ride %s on day %d", visitorId, rideName, day));
+
+        return reservations;
+    }
+
+    public void registerForNotifications(UUID visitorId, String rideName, int day, StreamObserver<NotifyServiceOuterClass.Notification> notificationObserver) {
+        List<Reservation> reservations = getUserReservationsByDayAndValidateParameters(visitorId, rideName, day);
 
         /* Register all reservations for notifications */
         reservations.forEach(reservation -> {
@@ -438,17 +459,7 @@ public class RideRepository {
 
 
     public StreamObserver<NotifyServiceOuterClass.Notification> unregisterForNotifications(UUID visitorId, String rideName, int day) {
-        if (!rideExists(rideName))
-            throw new RideNotFoundException("This ride does not exist");
-
-        validateDay(day);
-
-        if(!hasValidPass(visitorId, day))
-            throw new PassNotFoundException("No valid pass for day " + day);
-
-        Set<Reservation> reservations = getUserReservationsByDay(rideName, day, visitorId);
-        if(reservations == null || reservations.isEmpty())
-            throw new ReservationNotFoundException(String.format("No reservations for visitor %s for ride %s on day %d", visitorId, rideName, day));
+        List<Reservation> reservations = getUserReservationsByDayAndValidateParameters(visitorId, rideName, day);
 
         /* All these reservations share the same notificationObserver */
         StreamObserver<NotifyServiceOuterClass.Notification> notificationObserver = null;
