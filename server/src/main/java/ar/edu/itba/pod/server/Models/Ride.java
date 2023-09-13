@@ -24,15 +24,11 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
     private final RideTime rideTime;
     private final Map<Integer, Map<String, AtomicInteger>> slotsLeftByDayAndTimeSlot;
     private final Map<Integer, Integer> slotCapacityByDay;
-    private final Set<Reservation> canceledReservations; //TODO: Ver si es necesario
-
     public Ride(String name, RideTime rideTime) {
         this.name = name;
         this.rideTime = rideTime;
         this.slotsLeftByDayAndTimeSlot = new ConcurrentHashMap<>();
         this.slotCapacityByDay = new ConcurrentHashMap<>();
-        //TODO: Concurrent
-        this.canceledReservations = new ConcurrentSkipListSet<>();
     }
 
     public String getName() {
@@ -113,10 +109,6 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
                 daySlots.put(time, new AtomicInteger(slotCapacity));
             }
         }
-    }
-
-    public void addCancelledReservations(Reservation cancelledReservation) {
-        canceledReservations.add(cancelledReservation);
     }
 
     public boolean isTimeSlotValid(ParkLocalTime time) {

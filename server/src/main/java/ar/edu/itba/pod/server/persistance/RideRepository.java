@@ -235,7 +235,6 @@ public class RideRepository {
                             if(r.isRegisteredForNotifications())
                                 r.notifyCancelled();
 
-                            ride.addCancelledReservations(r);
                             reservationSet.remove(r);
                             cancelledAmount +=1;
                         }
