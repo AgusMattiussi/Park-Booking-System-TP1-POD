@@ -1,6 +1,7 @@
 package ar.edu.itba.pod.server.server;
 
 import ar.edu.itba.pod.server.Models.*;
+import ar.edu.itba.pod.server.Models.requests.QueryDayRequestModel;
 import ar.edu.itba.pod.server.exceptions.InvalidTimeException;
 import ar.edu.itba.pod.server.persistance.RideRepository;
 import io.grpc.stub.StreamObserver;
@@ -22,19 +23,14 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
 
     @Override
     public void queryCapacitySuggestion(QueryServiceOuterClass.QueryDayRequest request, StreamObserver<QueryServiceOuterClass.CapacitySuggestionResponse> responseObserver) {
-        int day = Integer.parseInt(request.getDayOfYear().getValue());
+        QueryDayRequestModel requestModel = QueryDayRequestModel.fromQueryDayRequest(request);
 
-        if(day < 1 || day > 365) {
-            throw new InvalidTimeException("Day must be between 1 and 365");
-        }
-
-        List<CapacitySuggestion> responseList = getCapacitySuggestionList(day);
+        List<CapacitySuggestion> responseList = getCapacitySuggestionList(requestModel.getDay());
 
         CapacitySuggestionResponse.Builder responseBuilder = CapacitySuggestionResponse.newBuilder();
 
-        responseList.forEach(capacitySuggestion -> {
-            responseBuilder.addCapacitySuggestions(capacitySuggestion.convertToGRPC());
-        });
+        responseList.forEach(capacitySuggestion ->
+                responseBuilder.addCapacitySuggestions(capacitySuggestion.convertToGRPC()));
 
         CapacitySuggestionResponse response = responseBuilder.build();
         responseObserver.onNext(response);
@@ -74,13 +70,9 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
 
     @Override
     public void queryConfirmedBookings(QueryServiceOuterClass.QueryDayRequest request, StreamObserver<QueryServiceOuterClass.ConfirmedBookingsResponse> responseObserver) {
-        int day = Integer.parseInt(request.getDayOfYear().getValue());
+        QueryDayRequestModel requestModel = QueryDayRequestModel.fromQueryDayRequest(request);
 
-        if(day < 1 || day > 365) {
-            throw new IllegalArgumentException("Day must be between 1 and 365");
-        }
-
-        List<ConfirmedBookings> responseList = getConfirmedBookingsList(day);
+        List<ConfirmedBookings> responseList = getConfirmedBookingsList(requestModel.getDay());
 
         ConfirmedBookingsResponse.Builder responseBuilder = ConfirmedBookingsResponse.newBuilder();
 
