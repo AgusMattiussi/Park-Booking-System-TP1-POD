@@ -337,6 +337,7 @@ public class RideRepository {
 
         ride.decrementCapacity(day, timeSlot);
         reservations.add(reservation);
+        ride.addReservationForDay(reservation);
         return state;
     }
 

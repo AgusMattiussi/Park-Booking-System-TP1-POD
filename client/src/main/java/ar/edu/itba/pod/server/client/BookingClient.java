@@ -144,6 +144,7 @@ public class BookingClient {
                         System.out.println("Success!\n");
                         System.out.printf("The reservation for %s at %s on the day %s is %s\n",
                                 rideName, bookingSlot, day, bookRideResponse.getStatus());
+                        latch.countDown();
                     }
 
                     @Override

@@ -92,9 +92,21 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
         slotsLeft.incrementAndGet();
     }
 
-
     public Map<Integer, Map<ParkLocalTime, Set<Reservation>>> getReservationsPerDay() {
         return reservationsPerDay;
+    }
+
+    public void addReservationForDay(Reservation reservation) {
+        int day = reservation.getDay();
+        ParkLocalTime timeSlot = reservation.getTime();
+
+        if (!reservationsPerDay.containsKey(day))
+            reservationsPerDay.put(day, new ConcurrentHashMap<>());
+
+        if (!reservationsPerDay.get(day).containsKey(timeSlot))
+            reservationsPerDay.get(day).put(timeSlot, new ConcurrentSkipListSet<>());
+
+        reservationsPerDay.get(day).get(timeSlot).add(reservation);
     }
 
     private Optional<Set<Reservation>> getReservationsForTimeSlot(int day, ParkLocalTime timeSlot) {
