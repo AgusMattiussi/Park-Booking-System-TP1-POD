@@ -12,6 +12,8 @@ import rideBooking.QueryServiceOuterClass.CapacitySuggestionResponse;
 import rideBooking.QueryServiceOuterClass.ConfirmedBookingsResponse;
 import rideBooking.Models.ReservationState;
 import java.util.*;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
 
@@ -39,6 +41,7 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
         responseObserver.onCompleted();
     }
 
+    //TODO: Revisar, chequear posibles nulls
     private List<CapacitySuggestion> getCapacitySuggestionList(int day){
         Map<String, Ride> rides = repository.getRides();
         List<CapacitySuggestion> responseList = new LinkedList<>();
@@ -46,15 +49,13 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
         rides.values().forEach(ride -> {
             if(!ride.isSlotCapacitySet(day)) { // Si la atracción ya cuenta con una capacidad cargada entonces no debe listarse en la consulta.
                 String rideName = ride.getName();
-
-                Map<Integer, Map<ParkLocalTime, Set<Reservation>>> reservations = ride.getReservationsPerDay();
+                //TODO: Que pasa si es null?
+                ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> reservationsForQueryDay = repository.getReservationsByDay(rideName, day);
                 int pendingBookings = 0;
 
-                Map<ParkLocalTime, Set<Reservation>> reservationsForQueryDay = reservations.get(day);
-
                 if(reservationsForQueryDay != null) {
-                    for (Map.Entry<ParkLocalTime, Set<Reservation>> entry : reservationsForQueryDay.entrySet()) {
-                        ParkLocalTime slot = entry.getKey();
+                    for (Map.Entry<String, ConcurrentSkipListSet<Reservation>> entry : reservationsForQueryDay.entrySet()) {
+                        ParkLocalTime slot = ParkLocalTime.fromString(entry.getKey());
                         for (Reservation reservation : entry.getValue()) {
                             if (reservation.getState() == ReservationState.PENDING) {
                                 pendingBookings++;
@@ -100,13 +101,11 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
         rides.values().forEach(ride -> {
             String rideName = ride.getName();
 
-            Map<Integer, Map<ParkLocalTime, Set<Reservation>>> reservations = ride.getReservationsPerDay();
-
-            Map<ParkLocalTime, Set<Reservation>> reservationsForQueryDay = reservations.get(day);
+            ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> reservationsForQueryDay = repository.getReservationsByDay(rideName, day);
 
             if(reservationsForQueryDay != null) {
-                for (Map.Entry<ParkLocalTime, Set<Reservation>> entry : reservationsForQueryDay.entrySet()) {
-                    ParkLocalTime slot = entry.getKey();
+                for (Map.Entry<String, ConcurrentSkipListSet<Reservation>> entry : reservationsForQueryDay.entrySet()) {
+                    ParkLocalTime slot = ParkLocalTime.fromString(entry.getKey());
                     for (Reservation reservation : entry.getValue()) {
                         if (reservation.getState() == ReservationState.CONFIRMED) {
                             confirmedBookings.add(new ConfirmedBookings(rideName, reservation.getVisitorId().toString(), slot.toString()));
