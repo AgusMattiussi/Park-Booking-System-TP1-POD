@@ -331,6 +331,7 @@ public class RideRepository {
             throw new AlreadyExistsException(String.format("Visitor '%s' already booked a ticket for '%s' at time slot '%s'", visitorId, rideName, timeSlot));
 
         reservations.add(reservation);
+        ride.addReservationForDay(reservation);
         return state;
     }
 

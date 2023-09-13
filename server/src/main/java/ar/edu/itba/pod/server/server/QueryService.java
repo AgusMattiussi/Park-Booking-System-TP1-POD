@@ -50,14 +50,18 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
                 Map<Integer, Map<ParkLocalTime, Set<Reservation>>> reservations = ride.getReservationsPerDay();
                 int pendingBookings = 0;
 
-                for (Map.Entry<ParkLocalTime, Set<Reservation>> entry : reservations.get(day).entrySet()) {
-                    ParkLocalTime slot = entry.getKey();
-                    for (Reservation reservation : entry.getValue()) {
-                        if (reservation.getState() == ReservationState.PENDING) {
-                            pendingBookings++;
+                Map<ParkLocalTime, Set<Reservation>> reservationsForQueryDay = reservations.get(day);
+
+                if(reservationsForQueryDay != null) {
+                    for (Map.Entry<ParkLocalTime, Set<Reservation>> entry : reservationsForQueryDay.entrySet()) {
+                        ParkLocalTime slot = entry.getKey();
+                        for (Reservation reservation : entry.getValue()) {
+                            if (reservation.getState() == ReservationState.PENDING) {
+                                pendingBookings++;
+                            }
                         }
+                        responseList.add(new CapacitySuggestion(rideName, pendingBookings, slot.toString()));
                     }
-                    responseList.add(new CapacitySuggestion(rideName, pendingBookings, slot.toString()));
                 }
             }
         });
@@ -98,11 +102,15 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
 
             Map<Integer, Map<ParkLocalTime, Set<Reservation>>> reservations = ride.getReservationsPerDay();
 
-            for (Map.Entry<ParkLocalTime, Set<Reservation>> entry : reservations.get(day).entrySet()) {
-                ParkLocalTime slot = entry.getKey();
-                for (Reservation reservation : entry.getValue()) {
-                    if(reservation.getState() == ReservationState.CONFIRMED){
-                        confirmedBookings.add(new ConfirmedBookings(rideName, reservation.getVisitorId().toString(), slot.toString()));
+            Map<ParkLocalTime, Set<Reservation>> reservationsForQueryDay = reservations.get(day);
+
+            if(reservationsForQueryDay != null) {
+                for (Map.Entry<ParkLocalTime, Set<Reservation>> entry : reservationsForQueryDay.entrySet()) {
+                    ParkLocalTime slot = entry.getKey();
+                    for (Reservation reservation : entry.getValue()) {
+                        if (reservation.getState() == ReservationState.CONFIRMED) {
+                            confirmedBookings.add(new ConfirmedBookings(rideName, reservation.getVisitorId().toString(), slot.toString()));
+                        }
                     }
                 }
             }
