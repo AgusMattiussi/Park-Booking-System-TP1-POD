@@ -420,6 +420,7 @@ public class RideRepository {
      *  - Invalid time slot
      *
      */
+    //TODO: Deberia llamar a ride.incrementCapacity()?
     public void cancelBooking(String rideName, int day, ParkLocalTime timeSlot, UUID visitorId) {
         Ride ride = getRide(rideName);
         validateRideTimeAndAccess(ride, day, timeSlot, visitorId);

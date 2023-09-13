@@ -68,6 +68,35 @@ public class RideTime implements GRPCModel<Models.RideTime>{
         return isTimeSlotValid(ParkLocalTime.fromString(timeSlot));
     }
 
+    private ParkLocalTime findFirstValidTimeSlotBetween(ParkLocalTime startTimeSlot, ParkLocalTime endTimeSlot){
+        ParkLocalTime current = startTimeSlot;
+
+        if(current.isBefore(open))
+            current = open;
+
+        while(current.isBefore(endTimeSlot) && current.isBefore(close)){
+            if(startTimeSlot.isBefore(current)){
+                current = current.plusMinutes(timeSlotDuration.toMinutes());
+            }
+        }
+
+        return current;
+    }
+
+    public List<ParkLocalTime> getTimeSlotsBetween(ParkLocalTime startTimeSlot, ParkLocalTime endTimeSlot){
+        if(startTimeSlot.isAfter(endTimeSlot))
+            throw new IllegalArgumentException("Start time slot must be before end time slot");
+
+        List<ParkLocalTime> timeSlots = new ArrayList<>();
+        ParkLocalTime current = findFirstValidTimeSlotBetween(startTimeSlot, endTimeSlot);
+
+        while(current.isBefore(endTimeSlot) && current.isBefore(close)){
+            timeSlots.add(current);
+            current = current.plusMinutes(timeSlotDuration.toMinutes());
+        }
+        return timeSlots;
+    }
+
     public List<String> getTimeSlotsAsStrings(){
         List<String> timeSlots = new ArrayList<>();
         ParkLocalTime current = open;

@@ -85,8 +85,6 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
     }
 
 
-
-
     public boolean isSlotCapacitySet(Integer day) {
         return getSlotCapacityForDay(day) != -1;
     }
@@ -117,6 +115,10 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
 
     public boolean isTimeSlotValid(String time) {
         return rideTime.isTimeSlotValid(time);
+    }
+
+    public List<ParkLocalTime> getTimeSlotsBetween(ParkLocalTime startTimeSlot, ParkLocalTime endTimeSlot){
+        return rideTime.getTimeSlotsBetween(startTimeSlot, endTimeSlot);
     }
 
 
