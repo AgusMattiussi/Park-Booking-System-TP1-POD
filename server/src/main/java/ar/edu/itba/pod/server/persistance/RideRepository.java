@@ -28,21 +28,9 @@ public class RideRepository {
 //    private final ConcurrentMap<String, ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>>> bookedRides;
 
 
-    private int acceptedAmount = 0;
-
-    private int relocatedAmount = 0;
-    private int cancelledAmount = 0;
-
     private RideRepository() {
         this.rides = new ConcurrentHashMap<>();
         this.parkPasses = new ConcurrentHashMap<>();
-//        this.bookedRides = new ConcurrentHashMap<>();
-
-        //TODO: Borrar
-//        rides.put("Space Mountain", new Ride("Space Mountain", new RideTime(ParkLocalTime.fromString("10:00"), ParkLocalTime.fromString("18:00")), 15));
-//        rides.put("Splash Mountain", new Ride("Splash Mountain", new RideTime(ParkLocalTime.fromString("10:00"), ParkLocalTime.fromString("16:00")), 15));
-//        rides.put("It's a Small World", new Ride("It's a Small World", new RideTime(ParkLocalTime.fromString("09:00"), ParkLocalTime.fromString("19:00")), 20));
-//        addParkPass(UUID.fromString("7727e3b9-a2d8-46fe-b581-0c63e8739694"), Models.PassTypeEnum.UNLIMITED, 22);
     }
 
     public static RideRepository getInstance() {
@@ -110,7 +98,6 @@ public class RideRepository {
     }
 
     public Optional<Ride> addRide(String name, RideTime rideTime, int slotTime) {
-        Ride ride = new Ride(name, rideTime);
 //        Falla:
 //        si existe una atracción con ese nombre
         checkRideName(name);
@@ -118,6 +105,7 @@ public class RideRepository {
         invalidTime(rideTime.getOpen(), rideTime.getClose());
 //        si con los valores provistos no existe un slot posible.
         checkValidSlot(rideTime, slotTime);
+        Ride ride = new Ride(name, rideTime, slotTime);
         this.rides.put(ride.getName(), ride);
         return Optional.of(ride);
     }
@@ -179,6 +167,10 @@ public class RideRepository {
         ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> reservationsPerDay = ride.getBookedSlots();
         ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> realocateReservations = new ConcurrentHashMap<>();
 
+        int acceptedAmount = 0;
+
+        int relocatedAmount = 0;
+        int cancelledAmount = 0;
         if(reservationsPerDay!=null && reservationsPerDay.containsKey(day)){
             // Iterate over each member of the map
             Set<Map.Entry<String, ConcurrentSkipListSet<Reservation>>> entrySet = reservationsPerDay.get(day).entrySet();
@@ -210,10 +202,8 @@ public class RideRepository {
                                 relocatedAmount +=1;
                             }else{
                                 r.setConfirmed();
-
                                 if(r.isRegisteredForNotifications())
                                     r.notifyConfirmed();
-
                                 acceptedAmount +=1;
                             }
                             count++; // Se agrego uno mas
@@ -270,16 +260,9 @@ public class RideRepository {
                 .setAcceptedAmount(acceptedAmount).setCancelledAmount(cancelledAmount).setRelocatedAmount(relocatedAmount)
                 .build();
 
-        cleanAmounts();
         return response;
     }
 
-
-    private void cleanAmounts(){
-        this.acceptedAmount = 0;
-        this.relocatedAmount = 0;
-        this.cancelledAmount = 0;
-    }
     private Ride getRide(String name) {
         if(!rideExists(name))
             throw new RideNotFoundException(String.format("Ride '%s' does not exist", name));
@@ -334,12 +317,12 @@ public class RideRepository {
         return rideReservations.get(day);
     }
 
-    private ConcurrentSkipListSet<Reservation> initializeOrGetReservationsForSlot(String rideName, int day, String timeSlot){
-        Ride ride = rides.get(rideName);
-        ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> reservationsByDay = ride.getBookedSlots();
-        ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> reservationsByTime = reservationsByDay.computeIfAbsent(day, k -> new ConcurrentHashMap<>());
-        return reservationsByTime.computeIfAbsent(timeSlot, k -> new ConcurrentSkipListSet<>());
-    }
+//    private ConcurrentSkipListSet<Reservation> initializeOrGetReservationsForSlot(String rideName, int day, String timeSlot){
+//        Ride ride = rides.get(rideName);
+//        ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> reservationsByDay = ride.getBookedSlots();
+//        ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> reservationsByTime = reservationsByDay.computeIfAbsent(day, k -> new ConcurrentHashMap<>());
+//        return reservationsByTime.computeIfAbsent(timeSlot, k -> new ConcurrentSkipListSet<>());
+//    }
 
 
     /*
@@ -367,18 +350,27 @@ public class RideRepository {
             if(ride.getSlotsLeft(day, timeSlot).get() == 0)
                 throw new ReservationLimitException(String.format("No more reservations available for ride '%s' on day %s at %s", rideName, day, timeSlot));
 
-        ConcurrentSkipListSet<Reservation> reservations = initializeOrGetReservationsForSlot(rideName, day, timeSlot.toString());
+
+        ConcurrentMap<Integer,ConcurrentMap<String,ConcurrentSkipListSet<Reservation>>> dayReservations = ride.getBookedSlots();
+
+        if (!dayReservations.containsKey(day)){
+            dayReservations.put(day,new ConcurrentHashMap<>());
+        }
+
+        ConcurrentMap<String,ConcurrentSkipListSet<Reservation>> reservations = dayReservations.get(day);
 
         ReservationState state = isCapacitySet ? ReservationState.CONFIRMED : ReservationState.PENDING;
         Reservation reservation = new Reservation(rideName, visitorId, state, day, timeSlot);
-
-        if(reservations.contains(reservation))
+        String timeSlotString = timeSlot.toString();
+        if (!reservations.containsKey(timeSlotString)){
+            reservations.put(timeSlotString, new ConcurrentSkipListSet<>());
+        } else if(reservations.get(timeSlotString).contains(reservation))
             throw new AlreadyExistsException(String.format("Visitor '%s' already booked a ticket for '%s' at time slot '%s'", visitorId, rideName, timeSlot));
 
         if(isCapacitySet)
             ride.decrementCapacity(day, timeSlot);
 
-        reservations.add(reservation);
+        reservations.get(timeSlotString).add(reservation);
         return state;
     }
 
