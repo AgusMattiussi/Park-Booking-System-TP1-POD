@@ -1,6 +1,7 @@
 package ar.edu.itba.pod.client;
 
 import ar.edu.itba.pod.client.utils.ClientUtils;
+import ar.edu.itba.pod.client.utils.callbacks.NotificationResponseFutureCallback;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -59,19 +60,7 @@ public class NotifyClient {
                                 .setVisitorId(visitorID)
                                 .build());
 
-                Futures.addCallback(result, new FutureCallback<>() {
-                    @Override
-                    public void onSuccess(NotifyServiceOuterClass.NotificationResponse notificationResponse) {
-                        System.out.printf("Response Status: %s - Successfully unsubscribed from %s ride notifications\n", notificationResponse.getStatus(), rideName);
-                        latch.countDown();
-                    }
-
-                    @Override
-                    public void onFailure(Throwable throwable) {
-                        latch.countDown();
-                        logger.error(throwable.getMessage());
-                    }
-                }, Runnable::run);
+                Futures.addCallback(result, new NotificationResponseFutureCallback(logger, latch, rideName), Runnable::run);
             }
             default -> throw new InvalidParameterException(String.format("Action '%s' not supported", action));
         }
