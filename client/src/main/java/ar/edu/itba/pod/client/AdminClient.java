@@ -83,29 +83,22 @@ public class AdminClient {
 
             }, Runnable::run);
 
-
         }else{
             final String inPath = ClientUtils.getArgumentValue(argMap, INPUT_PATH);
             List<String[]> csvData = getCSVData(inPath);
-            if (Objects.equals(action, "rides")){
-                for (String[] data : csvData) {
-//                    data => name;hoursFrom;hoursTo;slotGap
+            for (String[] data : csvData) {
+                ListenableFuture<BoolValue> result;
+                if (Objects.equals(action, "rides")) {
                     final String rideName = data[0];
                     Models.RideTime rideTime = Models.RideTime.newBuilder().setOpen(data[1]).setClose(data[2]).build();
                     AddRideRequest addRideRequest = AddRideRequest.newBuilder().setRideName(rideName).setRideTime(rideTime).setSlotMinutes(Integer.parseInt(data[3])).build();
-                    ListenableFuture<BoolValue> result = stub.addRide(addRideRequest);
-                    couldAdd(added, couldNotAdd, result);
-                }
-            }else{
-//                tickets
-                for (String[] data : csvData) {
-//                    data => visitorId;passType;dayOfYear
+                    result = stub.addRide(addRideRequest);
+                }else {
                     int passEnumInfo = Models.PassTypeEnum.valueOf(data[1]).getNumber();
                     AddPassRequest addPassRequest = AddPassRequest.newBuilder().setVisitorId(data[0]).setPassTypeValue(passEnumInfo).setValidDay(Integer.parseInt(data[2])).build();
-                    ListenableFuture<BoolValue> result = stub.addPassToPark(addPassRequest);
-                    couldAdd(added, couldNotAdd, result);
-
+                    result = stub.addPassToPark(addPassRequest);
                 }
+                couldAdd(added, couldNotAdd, result);
             }
         }
 
@@ -114,15 +107,12 @@ public class AdminClient {
             latch.await(); // Espera hasta que la operación esté completa
             if(!Objects.equals(action, "slots")){
                 String s = Objects.equals(action, "rides") ? " attractions" : " passes";
-
                 int couldNotAddNum = couldNotAdd.get();
                 if(couldNotAddNum >0){
                     System.out.printf("Cannot add %d %s\n", couldNotAddNum, s);
                 }
                 System.out.printf("%d %s added\n", added.get(), s);
-
             }
-
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             logger.error(e.getMessage());
