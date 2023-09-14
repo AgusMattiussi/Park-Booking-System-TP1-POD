@@ -8,7 +8,7 @@ package rideBooking;
 
 service NotifyService {
   // 1. Registrar a un visitante para que sea notificado de los eventos relacionados a una reserva
-  rpc notifyVisitor(NotifyRequest) returns (Notification);
+  rpc notifyVisitor(NotifyRequest) returns (stream Notification);
 
   // 2.  Anular el registro de un visitante para no recibir más notificaciones
   rpc notifyRemoveVisitor(NotifyRequest) returns (NotificationResponse);
