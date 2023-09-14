@@ -10,6 +10,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
 public final class ClientUtils {
     private final static Logger logger = LoggerFactory.getLogger(ClientUtils.class);
     public final static String INPUT_PATH = "inPath";
@@ -30,7 +31,6 @@ public final class ClientUtils {
                 .build();
     }
 
-    //TODO: manejar errores?
     public static Map<String, String> parseArguments(String[] args) {
         Map<String, String> argMap = new HashMap<>();
         for (String arg : args) {
