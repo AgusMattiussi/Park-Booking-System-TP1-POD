@@ -117,7 +117,7 @@ public class AdminClient {
             logger.error(e.getMessage());
         }
 
-        if(action.equals("rides") || action.equals("passes")){
+        if(action.equals("rides") || action.equals("tickets")){
             String s = action.equals("rides") ? " attractions" : " passes";
             int couldNotAddCount = couldNotAdd.get();
             int addedCount = added.get();
