@@ -57,29 +57,34 @@ public class Reservation implements Comparable<Reservation> {
 
     public void registerForNotifications(StreamObserver<NotifyServiceOuterClass.Notification> notificationObserver) {
         shouldNotifyLock.lock();
+        try {
+            if(shouldNotify)
+                throw new InvalidParameterException("Reservation is already registered for notifications");
+            shouldNotify = true;
 
-        if(shouldNotify)
-            throw new InvalidParameterException("Reservation is already registered for notifications");
-        shouldNotify = true;
-
-        this.notificationObserver = notificationObserver;
-
-        shouldNotifyLock.unlock();
+            this.notificationObserver = notificationObserver;
+        } finally {
+            shouldNotifyLock.unlock();
+        }
     }
 
     /* Returns the observer to be closed by the caller method */
     public StreamObserver<NotifyServiceOuterClass.Notification> unregisterForNotifications() {
-        shouldNotifyLock.lock();
-        
-        if(!shouldNotify)
-            throw new InvalidParameterException("Reservation is not registered for notifications");
-        shouldNotify = false;
+        StreamObserver<NotifyServiceOuterClass.Notification> toReturn;
 
-        StreamObserver<NotifyServiceOuterClass.Notification> aux = notificationObserver;
-        this.notificationObserver = null;
-        
-        shouldNotifyLock.unlock();
-        return aux;
+        shouldNotifyLock.lock();
+        try {
+            if(!shouldNotify)
+                throw new InvalidParameterException("Reservation is not registered for notifications");
+            shouldNotify = false;
+
+            toReturn = notificationObserver;
+            this.notificationObserver = null;
+        } finally {
+            shouldNotifyLock.unlock();
+        }
+
+        return toReturn;
     }
 
     public boolean isRegisteredForNotifications() {
@@ -87,9 +92,14 @@ public class Reservation implements Comparable<Reservation> {
     }
 
     public void notifyVisitor(String message) {
-        if(!shouldNotify)
-            throw new InvalidParameterException("Reservation is not registered for notifications");
-        notificationObserver.onNext(NotifyServiceOuterClass.Notification.newBuilder().setMessage(message).build());
+        shouldNotifyLock.lock();
+        try {
+            if(!shouldNotify)
+                throw new InvalidParameterException("Reservation is not registered for notifications");
+            notificationObserver.onNext(NotifyServiceOuterClass.Notification.newBuilder().setMessage(message).build());
+        } finally {
+            shouldNotifyLock.unlock();
+        }
     }
 
     private void notifyState(ReservationState state){
@@ -139,6 +149,14 @@ public class Reservation implements Comparable<Reservation> {
         return this.state == ReservationState.CONFIRMED;
     }
 
+    public boolean isCancelled(){
+        return this.state == ReservationState.CANCELLED;
+    }
+
+    public boolean isRelocated(){
+        return this.state == ReservationState.RELOCATED;
+    }
+
     @Override
     public int compareTo(Reservation other) {
         int comp = Integer.compare(this.day, other.day);
@@ -168,16 +186,18 @@ public class Reservation implements Comparable<Reservation> {
     //TODO: Borrar
     @Override
     public String toString() {
-        return "Reservation{" +
-                "rideName='" + rideName + '\'' +
-                ", visitorId=" + visitorId +
-                ", state=" + state +
-                ", day=" + day +
-                ", time=" + time +
-                ", shouldNotify=" + shouldNotify +
-                ", notificationObserver=" + notificationObserver +
-                ", shouldNotifyLock=" + shouldNotifyLock +
-                '}';
+        return new StringBuilder()
+                .append("Reservation{")
+                .append("rideName='").append(rideName).append('\'')
+                .append(", visitorId=").append(visitorId)
+                .append(", state=").append(state)
+                .append(", day=").append(day)
+                .append(", time=").append(time)
+                .append(", shouldNotify=").append(shouldNotify)
+                .append(", notificationObserver=").append(notificationObserver)
+                .append(", shouldNotifyLock=").append(shouldNotifyLock)
+                .append('}')
+                .toString();
     }
 
 }

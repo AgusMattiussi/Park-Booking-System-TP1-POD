@@ -39,6 +39,7 @@ public class GlobalExceptionHandlerInterceptor implements ServerInterceptor {
             }
         }
 
+        //TODO: Agregar todos los erroes
         private final Map<Class<? extends Throwable>, Code> errorCodesByException = Map.of(
                 ExecutionControl.NotImplementedException.class, Code.UNIMPLEMENTED,
                 AlreadyExistsException.class, Code.ALREADY_EXISTS,

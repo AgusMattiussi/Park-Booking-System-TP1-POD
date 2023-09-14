@@ -23,7 +23,6 @@ public class Server {
 
     public static void main(String[] args) throws InterruptedException, IOException {
         logger.info(" Server Starting ...");
-
         int port = 50051;
         io.grpc.Server server = ServerBuilder.forPort(port)
                 .addService(handledService.apply(new RideBookingService()))

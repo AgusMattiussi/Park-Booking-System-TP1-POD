@@ -17,6 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 //TODO: Cambiar las colecciones a su version concurrente
 //TODO: Cambiar a Atomics
@@ -26,14 +28,16 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
     private final RideTime rideTime;
     private final Map<Integer, Map<String, AtomicInteger>> slotsLeftByDayAndTimeSlot;
     private final Map<Integer, Integer> slotCapacityByDay;
-
     private final ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> bookedSlots;
+    private final Lock slotCapacityLock;
+
     public Ride(String name, RideTime rideTime) {
         this.name = name;
         this.rideTime = rideTime;
         this.slotsLeftByDayAndTimeSlot = new ConcurrentHashMap<>();
         this.slotCapacityByDay = new ConcurrentHashMap<>();
         this.bookedSlots = new ConcurrentHashMap<>();
+        this.slotCapacityLock = new ReentrantLock();
     }
 
     public String getName() {
@@ -66,28 +70,43 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
         return getSlotsLeft(day, timeSlot.toString());
     }
 
+    public void decrementCapacity(int day, ParkLocalTime timeSlot, int count) {
+        for(int i = 0; i < count; i++)
+            decrementCapacity(day, timeSlot);
+    }
+
     public void decrementCapacity(int day, ParkLocalTime timeSlot) {
-        AtomicInteger slotsLeft = getSlotsLeft(day, timeSlot);
+        slotCapacityLock.lock();
+        try {
+            AtomicInteger slotsLeft = getSlotsLeft(day, timeSlot);
 
-        if(slotsLeft == null || !slotCapacityByDay.containsKey(day))
-            throw new IllegalArgumentException(String.format("%s - Day %d has no capacity yet", name, day));
+            if(slotsLeft == null || !slotCapacityByDay.containsKey(day))
+                throw new IllegalArgumentException(String.format("%s - Day %d has no capacity yet", name, day));
 
-        if(slotsLeft.get() == 0)
-            throw new IllegalArgumentException(String.format("%s - Day %d has no slots left", name, day));
+            if(slotsLeft.get() <= 0)
+                throw new IllegalArgumentException(String.format("%s - Day %d has no slots left", name, day));
 
-        slotsLeft.decrementAndGet();
+            slotsLeft.decrementAndGet();
+        } finally {
+            slotCapacityLock.unlock();
+        }
     }
 
     public void incrementCapacity(int day, ParkLocalTime timeSlot){
-        AtomicInteger slotsLeft = getSlotsLeft(day, timeSlot);
+        slotCapacityLock.lock();
+        try {
+            AtomicInteger slotsLeft = getSlotsLeft(day, timeSlot);
 
-        if(slotsLeft == null || !slotCapacityByDay.containsKey(day))
-            throw new IllegalArgumentException(String.format("%s - Day %d has no capacity yet", name, day));
+            if(slotsLeft == null || !slotCapacityByDay.containsKey(day))
+                throw new IllegalArgumentException(String.format("%s - Day %d has no capacity yet", name, day));
 
-        if(slotsLeft.get() == slotCapacityByDay.get(day))
-            throw new IllegalArgumentException(String.format("%s - Day %d has reached its maximum capacity. Cannot add a slot", name, day));
+            if(slotsLeft.get() >= slotCapacityByDay.get(day))
+                throw new IllegalArgumentException(String.format("%s - Day %d has reached its maximum capacity. Cannot add a slot", name, day));
 
-        slotsLeft.incrementAndGet();
+            slotsLeft.incrementAndGet();
+        } finally {
+            slotCapacityLock.unlock();
+        }
     }
 
 
@@ -212,7 +231,7 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
 
                 }
                 // Elimino todas las reservas canceladas o q se realocaron en otra
-                reservations.removeIf(reserv -> (reserv.getState().equals(ReservationState.CANCELLED) || reserv.getState().equals(ReservationState.RELOCATED)));
+                reservations.removeIf(reserv -> reserv.isCancelled() || reserv.isRelocated());
             }
         }
 
@@ -224,6 +243,7 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
     private boolean checkVisitorPass(ParkPassRepository parkPassInstance, Models.PassTypeEnum passType, UUID visitorId, ParkLocalTime parkLocalTime, int day) {
         return passType.equals(Models.PassTypeEnum.HALFDAY) ? parkPassInstance.checkHalfDayPass(parkLocalTime) : parkPassInstance.checkVisitorPass(visitorId, day);
     }
+
     public ReservationState bookRide(int day, ParkLocalTime timeSlot, UUID visitorId) {
         boolean isCapacitySet = this.isSlotCapacitySet(day);
         if(isCapacitySet)
@@ -240,19 +260,18 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
         String timeSlotString = timeSlot.toString();
 
         reservations.putIfAbsent(timeSlotString, new ConcurrentSkipListSet<>());
+        Set<Reservation> timeSlotReservations = reservations.get(timeSlotString);
 
-        if(reservations.get(timeSlotString).contains(reservation))
+        if(timeSlotReservations.contains(reservation))
             throw new AlreadyExistsException(String.format("Visitor '%s' already booked a ticket for '%s' at time slot '%s'", visitorId, this.name, timeSlot));
 
         if(isCapacitySet)
             this.decrementCapacity(day, timeSlot);
 
-        reservations.get(timeSlotString).add(reservation);
+        timeSlotReservations.add(reservation);
         return state;
     }
 
-
-    //TODO: Ver si esta es la unica implementacion posible (o si algun metodo necesita otra)
     @Override
     public RideBookingServiceOuterClass.Ride convertToGRPC() {
         return RideBookingServiceOuterClass.Ride.newBuilder()
