@@ -251,10 +251,8 @@ public class Ride implements GRPCModel<RideBookingServiceOuterClass.Ride> {
                     reservations.removeIf(reserv -> reserv.isCancelled() || reserv.isRelocated());
                 }
             }
-            dayLocks.get(day).notify();
         } finally {
             dayLocks.get(day).unlock();
-            dayLocks.get(day).notify();
         }
 
         return AdminParkServiceOuterClass.SlotCapacityResponse.newBuilder()
