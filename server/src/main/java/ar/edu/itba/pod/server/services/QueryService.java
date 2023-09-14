@@ -36,15 +36,14 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
         responseObserver.onCompleted();
     }
 
-    //TODO: Revisar, chequear posibles nulls
     private List<CapacitySuggestion> getCapacitySuggestionList(int day){
         Map<String, Ride> rides = repository.getRides();
         List<CapacitySuggestion> responseList = new LinkedList<>();
 
         rides.values().forEach(ride -> {
-            if(!ride.isSlotCapacitySet(day)) { // Si la atracción ya cuenta con una capacidad cargada entonces no debe listarse en la consulta.
+            if(!ride.isSlotCapacitySet(day)) {
                 String rideName = ride.getName();
-                //TODO: Que pasa si es null?
+
                 ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> reservationsForQueryDay = repository.getReservationsByDay(rideName, day);
                 int pendingBookings;
 

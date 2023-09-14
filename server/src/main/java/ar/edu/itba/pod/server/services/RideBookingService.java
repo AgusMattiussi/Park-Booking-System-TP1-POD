@@ -21,7 +21,6 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
 
     @Override
     public void getRides(Empty request, StreamObserver<GetRideResponse> responseObserver) {
-        //TODO: Cambiar getRides() a Collection?
         GetRideResponse.Builder responseBuilder = GetRideResponse.newBuilder();
 
         rideRepository.getRidesList().forEach(ride -> responseBuilder.addRides(ride.convertToGRPC()));
@@ -32,7 +31,7 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
     @Override
     public void getRideAvailability(GetRideAvailabilityRequest request, StreamObserver<GetRideAvailabilityResponse> responseObserver) {
         GetRideAvailabilityRequestModel requestModel = GetRideAvailabilityRequestModel.fromGetRideAvailabilityRequest(request);
-        // TODO: Y si resuelvo esto adentro de RideRepository?
+
         Map<String, Map<ParkLocalTime, RideAvailability>> ridesAvailability;
         if(requestModel.getRideName() != null){
             if(requestModel.getEndTimeSlot() != null)
