@@ -39,7 +39,6 @@ public class GlobalExceptionHandlerInterceptor implements ServerInterceptor {
             }
         }
 
-        //TODO: Agregar todos los erroes
         private final Map<Class<? extends Throwable>, Code> errorCodesByException = Map.of(
                 ExecutionControl.NotImplementedException.class, Code.UNIMPLEMENTED,
                 AlreadyExistsException.class, Code.ALREADY_EXISTS,
@@ -48,8 +47,14 @@ public class GlobalExceptionHandlerInterceptor implements ServerInterceptor {
                 InvalidPassTypeException.class, Code.INVALID_ARGUMENT,
                 SlotCapacityException.class, Code.INVALID_ARGUMENT,
                 InvalidTimeException.class, Code.CANCELLED,
-                RuntimeException.class, Code.INTERNAL
+                RuntimeException.class, Code.INTERNAL,
+                AlreadyConfirmedException.class, Code.ALREADY_EXISTS,
+                PassNotFoundException.class, Code.NOT_FOUND
+//                ,
+//                ReservationLimitException.class, Code.INVALID_ARGUMENT,
+//                ReservationNotFoundException.class, Code.NOT_FOUND
         );
+
 
         private void handleException(RuntimeException exception, ServerCall<T, R> serverCall, Metadata headers) {
             Throwable error = exception;
