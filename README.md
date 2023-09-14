@@ -31,7 +31,7 @@ cd ./tmp/tpe1-g6-client-2023.2Q/
 Para ejecutar el cliente de reserva de atracciones, se deben ejecutar los siguientes comandos en la carpeta raíz del proyecto:
 ```bash
 cd ./tmp/tpe1-g6-client-2023.2Q/
-./book-cli -DserverAddress=xx.xx.xx.xx:yyyy -Daction=actionName [ -Dday=dayOfYear -ride=rideName -Dvisitor=visitorId -Dslot=bookingSlot -DslotTo=bookingSlotTo ]
+./book-cli -DserverAddress=xx.xx.xx.xx:yyyy -Daction=actionName [ -Dday=dayOfYear -Dattraction=rideName -Dvisitor=visitorId -Dslot=bookingSlot -DslotTo=bookingSlotTo ]
 ```
 
 
