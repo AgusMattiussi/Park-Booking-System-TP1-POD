@@ -303,12 +303,6 @@ public class RideRepository {
 
         validateDay(day);
 
-        //TODO: Borrar si no se usa
-        Ride ride = rides.get(rideName);
-        Set<Reservation> bookedReservations = new HashSet<>();
-        for (Map.Entry<String, Ride> r: rides.entrySet()) {
-            bookedReservations.addAll(Objects.requireNonNull(getUserReservationsByDay(r.getKey(), day, visitorId)));
-        }
 
         if(!parkPassInstance.checkVisitorPass(visitorId, day))
             throw new InvalidPassTypeException(String.format("No reservation for day %s, according to THREE pass, yo already have 3 reservations", day));
