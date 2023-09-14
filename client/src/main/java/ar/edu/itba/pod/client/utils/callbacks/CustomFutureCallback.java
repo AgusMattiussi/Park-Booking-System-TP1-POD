@@ -11,6 +11,9 @@ public abstract class CustomFutureCallback<V> implements FutureCallback<V> {
     private final CountDownLatch latch;
 
     protected CustomFutureCallback(Logger logger, CountDownLatch latch) {
+        if(logger == null || latch == null)
+            throw new IllegalArgumentException("logger and latch must not be null");
+
         this.logger = logger;
         this.latch = latch;
     }
