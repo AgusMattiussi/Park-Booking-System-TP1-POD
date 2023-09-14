@@ -1,6 +1,7 @@
 package ar.edu.itba.pod.client;
 
 import ar.edu.itba.pod.client.utils.ClientUtils;
+import ar.edu.itba.pod.client.utils.callbacks.SlotCapacityResponseFutureCallback;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -29,10 +30,7 @@ import static ar.edu.itba.pod.client.utils.ClientUtils.*;
 
 public class AdminClient {
     private static final Logger logger = LoggerFactory.getLogger(AdminClient.class);
-
     private static final CountDownLatch latch = new CountDownLatch(1);
-
-//     ./admin-cli -DserverAddress=10.6.0.1:50051 -Daction=rides/tickets/slots -Dride=ride -Dday=100 -Dcapacity=20 -DinPath="excel.csv"
 
     public static void main(String[] args) throws InterruptedException {
         logger.info("Admin Client Starting ...");
@@ -57,31 +55,8 @@ public class AdminClient {
             AddSlotCapacityRequest addSlotCapacityRequest = AddSlotCapacityRequest.newBuilder().setRideName(rideName).setSlotCapacity(Integer.parseInt(capacity)).setValidDay(Integer.parseInt(day)).build();
 
             ListenableFuture<SlotCapacityResponse> result = stub.addSlotCapacity(addSlotCapacityRequest);
-            Futures.addCallback(result, new FutureCallback<>() {
-                @Override
-                public void onSuccess(SlotCapacityResponse slotCapacityResponse) {
-                    String response = String.format("""
-                            Loaded capacity of %s for %s on day %s
-                            %s bookings confirmed without changes
-                            %s bookings relocated
-                            %s bookings cancelled
-                            """,
-                            capacity, rideName, day,
-                            slotCapacityResponse.getAcceptedAmount(),
-                            slotCapacityResponse.getRelocatedAmount(),
-                            slotCapacityResponse.getCancelledAmount());
-                    System.out.println(response);
-                    latch.countDown();
-                }
-
-                @Override
-                public void onFailure(Throwable throwable) {
-                    latch.countDown();
-                    System.out.printf("Cannot add slot capacity for ride called %s on day %s.%n", rideName, day);
-                    logger.error(throwable.getMessage());
-                }
-
-            }, Runnable::run);
+            Futures.addCallback(result, new SlotCapacityResponseFutureCallback(logger, latch, rideName, day, capacity),
+                    Runnable::run);
 
         }else{
             final String inPath = ClientUtils.getArgumentValue(argMap, INPUT_PATH);
