@@ -7,7 +7,6 @@ import rideBooking.RideBookingServiceOuterClass;
 
 import java.util.Objects;
 
-// TODO: Mover a carpeta 'Responses'?
 public class RideAvailability implements Comparable<RideAvailability>, GRPCModel<RideBookingServiceOuterClass.TimeSlotAvailability> {
     private final ParkLocalTime timeSlot;
     private final int pendingBookingsCount;
@@ -55,7 +54,6 @@ public class RideAvailability implements Comparable<RideAvailability>, GRPCModel
     public int compareTo(RideAvailability o) {
         return this.timeSlot.compareTo(o.timeSlot);
     }
-
 
     @Override
     public RideBookingServiceOuterClass.TimeSlotAvailability convertToGRPC() {

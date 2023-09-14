@@ -7,21 +7,15 @@ syntax = "proto3";
  package rideBooking;
 
 service RideBookingService {
-  // 1. Consultar las atracciones
   rpc getRides(google.protobuf.Empty) returns (GetRideResponse);
 
-  // 2. Consultar la disponibilidad de las atracciones
   rpc getRideAvailability(GetRideAvailabilityRequest) returns (GetRideAvailabilityResponse);
 
-  // 3. Reservar una atracción
   rpc bookRide(BookRideRequest) returns (BookRideResponse);
 
-  // 4. Confirmar una reserva pendiente de una atracción a partir del nombre de la atracción , el día del año, el slot de la reserva (en formato HH:MM) y el id de visitante (en formato UUID)
   rpc confirmBooking(BookRideRequest) returns (BookRideResponse);
 
-  // 5. Cancelar una reserva de una atracción a partir del nombre de la atracción, el día del año, el slot de la reserva (en formato HH:MM) y el id del visitante (en formato UUID)
   rpc cancelBooking(BookRideRequest) returns (BookRideResponse);
-
 }
 
 message GetRideResponse {

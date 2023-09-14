@@ -14,12 +14,10 @@ public class Reservation implements Comparable<Reservation> {
     private final String rideName;
 
     private final UUID visitorId;
-    //TODO: Esto requiere lock si o si
     private ReservationState state;
     private final int day;
     private final ParkLocalTime time;
     private boolean shouldNotify;
-    //TODO: Chequear thread-safety
     private StreamObserver<NotifyServiceOuterClass.Notification> notificationObserver;
     private final Lock shouldNotifyLock;
     
@@ -119,12 +117,10 @@ public class Reservation implements Comparable<Reservation> {
     }
 
 
-    //FIXME: Va a devolver la misma notificacion para cada Reservation del dia
     public void notifySlotsCapacityAdded(int capacity){
         notifyVisitor(String.format("%s announced slot capacity for the day %d: %d places.", rideName, day, capacity));
     }
 
-    //TODO: Siempre queda pending despues de realocar?
     public void notifyRelocated(String previousTime){
         notifyVisitor(String.format("The reservation for %s at %s on the day %d was moved to 15:45 and is %s.",
                 this.rideName, previousTime, this.day, ReservationState.PENDING));
@@ -188,7 +184,6 @@ public class Reservation implements Comparable<Reservation> {
         return Objects.hash(visitorId, day, time);
     }
 
-    //TODO: Borrar
     @Override
     public String toString() {
         return new StringBuilder()
