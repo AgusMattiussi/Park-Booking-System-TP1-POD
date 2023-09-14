@@ -1,6 +1,10 @@
-package ar.edu.itba.pod.server.server;
+package ar.edu.itba.pod.server;
 
 import ar.edu.itba.pod.server.exceptions.GlobalExceptionHandlerInterceptor;
+import ar.edu.itba.pod.server.server.AdminParkServer;
+import ar.edu.itba.pod.server.server.NotifyService;
+import ar.edu.itba.pod.server.server.QueryService;
+import ar.edu.itba.pod.server.server.RideBookingService;
 import io.grpc.BindableService;
 import io.grpc.ServerBuilder;
 import io.grpc.ServerInterceptors;

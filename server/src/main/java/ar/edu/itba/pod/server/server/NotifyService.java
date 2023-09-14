@@ -2,6 +2,7 @@ package ar.edu.itba.pod.server.server;
 
 
 import ar.edu.itba.pod.server.Models.requests.NotifyRequestModel;
+import ar.edu.itba.pod.server.Server;
 import ar.edu.itba.pod.server.ridePersistance.RideRepository;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
