@@ -1,11 +1,14 @@
-package ar.edu.itba.pod.server.client;
+package ar.edu.itba.pod.client;
 
-import ar.edu.itba.pod.server.client.utils.ClientUtils;
+import ar.edu.itba.pod.client.utils.ClientUtils;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.BoolValue;
-import com.google.protobuf.Int32Value;
 import com.opencsv.*;
 
 import io.grpc.ManagedChannel;
+import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,14 +20,19 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import rideBooking.AdminParkServiceOuterClass.*;
 import rideBooking.Models;
 
-import static ar.edu.itba.pod.server.client.utils.ClientUtils.*;
+import static ar.edu.itba.pod.client.utils.ClientUtils.*;
 
 public class AdminClient {
     private static final Logger logger = LoggerFactory.getLogger(AdminClient.class);
+
+    private static final CountDownLatch latch = new CountDownLatch(1);
 
 //     ./admin-cli -DserverAddress=10.6.0.1:50051 -Daction=rides/tickets/slots -Dride=ride -Dday=100 -Dcapacity=20 -DinPath="excel.csv"
 
@@ -37,7 +45,12 @@ public class AdminClient {
 
         ManagedChannel channel = ClientUtils.buildChannel(serverAddress);
 
-        AdminParkServiceGrpc.AdminParkServiceBlockingStub stub = AdminParkServiceGrpc.newBlockingStub(channel);
+        AdminParkServiceGrpc.AdminParkServiceFutureStub stub = AdminParkServiceGrpc.newFutureStub(channel);
+
+
+        final AtomicInteger added = new AtomicInteger();
+        final AtomicInteger couldNotAdd = new AtomicInteger();
+
         if(Objects.equals(action, "slots")){
             final String rideName = getArgumentValue(argMap, RIDE_NAME);
             final String day = getArgumentValue(argMap, DAY);
@@ -45,45 +58,45 @@ public class AdminClient {
 
             AddSlotCapacityRequest addSlotCapacityRequest = AddSlotCapacityRequest.newBuilder().setRideName(rideName).setSlotCapacity(Integer.parseInt(capacity)).setValidDay(Integer.parseInt(day)).build();
 
-            try {
-                SlotCapacityResponse slotCapacityResponse = stub.addSlotCapacity(addSlotCapacityRequest);
-                String response = String.format("""
-                                Loaded capacity of %s for %s on day %s
-                                %s bookings confirmed without changes
-                                %s bookings relocated
-                                %s bookings cancelled
-                                """,
-                        capacity, rideName, day,
-                        slotCapacityResponse.getAcceptedAmount(),
-                        slotCapacityResponse.getRelocatedAmount(),
-                        slotCapacityResponse.getCancelledAmount());
-                System.out.println(response);
-            } catch (Exception e) {
-                System.out.printf("Cannot add slot capacity for ride called %s on day %s.%n", rideName, day);
-                System.out.println(e.getMessage());
-            }
+            ListenableFuture<SlotCapacityResponse> result = stub.addSlotCapacity(addSlotCapacityRequest);
+            Futures.addCallback(result, new FutureCallback<>() {
+                @Override
+                public void onSuccess(SlotCapacityResponse slotCapacityResponse) {
+                    String response = String.format("""
+                            Loaded capacity of %s for %s on day %s
+                            %s bookings confirmed without changes
+                            %s bookings relocated
+                            %s bookings cancelled
+                            """,
+                            capacity, rideName, day,
+                            slotCapacityResponse.getAcceptedAmount(),
+                            slotCapacityResponse.getRelocatedAmount(),
+                            slotCapacityResponse.getCancelledAmount());
+                    System.out.println(response);
+                    latch.countDown();
+                }
+
+                @Override
+                public void onFailure(Throwable throwable) {
+                    latch.countDown();
+                    System.out.printf("Cannot add slot capacity for ride called %s on day %s.%n", rideName, day);
+                    logger.error(throwable.getMessage());
+                }
+
+            }, Runnable::run);
+
 
         }else{
             final String inPath = ClientUtils.getArgumentValue(argMap, INPUT_PATH);
             List<String[]> csvData = getCSVData(inPath);
-            int added = 0;
-            int couldNotAdd = 0;
             if (Objects.equals(action, "rides")){
                 for (String[] data : csvData) {
 //                    data => name;hoursFrom;hoursTo;slotGap
                     final String rideName = data[0];
                     Models.RideTime rideTime = Models.RideTime.newBuilder().setOpen(data[1]).setClose(data[2]).build();
                     AddRideRequest addRideRequest = AddRideRequest.newBuilder().setRideName(rideName).setRideTime(rideTime).setSlotMinutes(Integer.parseInt(data[3])).build();
-                    try {
-                        BoolValue created = stub.addRide(addRideRequest);
-                        if (created.getValue()){
-                            added++;
-                        }else {
-                            couldNotAdd++;
-                        }
-                    } catch (Exception e) {
-                        couldNotAdd++;
-                    }
+                    ListenableFuture<BoolValue> result = stub.addRide(addRideRequest);
+                    couldAdd(added, couldNotAdd, result);
                 }
             }else{
 //                tickets
@@ -91,25 +104,52 @@ public class AdminClient {
 //                    data => visitorId;passType;dayOfYear
                     int passEnumInfo = Models.PassTypeEnum.valueOf(data[1]).getNumber();
                     AddPassRequest addPassRequest = AddPassRequest.newBuilder().setVisitorId(data[0]).setPassTypeValue(passEnumInfo).setValidDay(Integer.parseInt(data[2])).build();
-                    try {
-                        BoolValue created = stub.addPassToPark(addPassRequest);
-                        if (created.getValue()){
-                            added++;
-                        }else {
-                            couldNotAdd++;
-                        }
-                    } catch (Exception e) {
-                        couldNotAdd++;
-                    }
+                    ListenableFuture<BoolValue> result = stub.addPassToPark(addPassRequest);
+                    couldAdd(added, couldNotAdd, result);
+
                 }
             }
-            String s = Objects.equals(action, "rides") ? " attractions" : " passes";
-
-            if(couldNotAdd>0){
-                System.out.printf("Cannot add %d %s\n", couldNotAdd, s);
-            }
-            System.out.printf("%d %s added\n", added, s);
         }
+
+        try {
+            logger.info("Waiting for response ...");
+            latch.await(); // Espera hasta que la operación esté completa
+            if(!Objects.equals(action, "slots")){
+                String s = Objects.equals(action, "rides") ? " attractions" : " passes";
+
+                int couldNotAddNum = couldNotAdd.get();
+                if(couldNotAddNum >0){
+                    System.out.printf("Cannot add %d %s\n", couldNotAddNum, s);
+                }
+                System.out.printf("%d %s added\n", added.get(), s);
+
+            }
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.error(e.getMessage());
+        }
+    }
+
+    private static void couldAdd(AtomicInteger added, AtomicInteger couldNotAdd, ListenableFuture<BoolValue> result) {
+        Futures.addCallback(result, new FutureCallback<>() {
+            @Override
+            public void onSuccess(BoolValue created) {
+                if (created.getValue()){
+                    added.incrementAndGet();
+                }else {
+                    couldNotAdd.incrementAndGet();
+                }
+                latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                latch.countDown();
+                logger.error(throwable.getMessage());
+            }
+
+        }, Runnable::run);
     }
 
     private static List<String[]> getCSVData(String inPath) {

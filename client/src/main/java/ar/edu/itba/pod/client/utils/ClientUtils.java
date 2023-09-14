@@ -1,10 +1,9 @@
-package ar.edu.itba.pod.server.client.utils;
+package ar.edu.itba.pod.client.utils;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rideBooking.Models;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;

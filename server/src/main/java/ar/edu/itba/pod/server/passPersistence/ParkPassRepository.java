@@ -59,23 +59,13 @@ public class ParkPassRepository {
 //    y si es three que no tenga 3 o mas ya hechas
     public boolean checkVisitorPass(UUID visitorId, int day){
         List<Reservation> reservationSet = new ArrayList<>();
-        System.out.println("ARRANCO A CHEQUEAR");
         for (String rideName: rideRepository.getRides().keySet()) {
-            System.out.println("Estoy aca");
             List<Reservation> reservations = rideRepository.getUserReservationsByDay(rideName, day, visitorId);
             if(reservations != null){
-                System.out.println("Agrego estos: ");
-                System.out.println(reservations);
                 reservationSet.addAll(reservations);}
-
         }
-
-        System.out.println("\n\n\n" + "Set = " + reservationSet + "\n\n\n");
 
         Models.PassTypeEnum passType = this.parkPasses.get(visitorId).get(day).getType();
-        if(passType == Models.PassTypeEnum.THREE){
-            System.out.println("Found " + reservationSet.size() + " rides for visitor");
-        }
         return passType == Models.PassTypeEnum.UNLIMITED || reservationSet.size() < 3;
     }
 
