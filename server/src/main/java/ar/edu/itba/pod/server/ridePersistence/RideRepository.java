@@ -303,9 +303,8 @@ public class RideRepository {
 
         validateDay(day);
 
-
-        if(!parkPassInstance.checkVisitorPass(visitorId, day))
-            throw new InvalidPassTypeException(String.format("No reservation for day %s, according to THREE pass, yo already have 3 reservations", day));
+        if(!parkPassInstance.hasValidPass(visitorId, day))
+            throw new InvalidPassTypeException(String.format("No valid pass for day %s", day));
 
 
         List<Reservation> reservations = getUserReservationsByDay(rideName, day, visitorId);
