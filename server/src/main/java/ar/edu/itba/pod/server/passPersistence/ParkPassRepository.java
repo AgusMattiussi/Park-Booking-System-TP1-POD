@@ -10,14 +10,13 @@ import rideBooking.Models;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 public class ParkPassRepository {
     private static final ParkLocalTime HALF_DAY_TIME = ParkLocalTime.fromString("14:00");
     private static ParkPassRepository instance;
     private static RideRepository rideRepository = RideRepository.getInstance();
 
-    private final ConcurrentMap<UUID, ConcurrentMap<Integer, ParkPass>> parkPasses;
+    private final Map<UUID, Map<Integer, ParkPass>> parkPasses;
 
     private ParkPassRepository() {
         this.parkPasses = new ConcurrentHashMap<>();
@@ -77,7 +76,7 @@ public class ParkPassRepository {
         return this.parkPasses.containsKey(visitorId) && this.parkPasses.get(visitorId).containsKey(day);
     }
 
-    public ConcurrentMap<UUID, ConcurrentMap<Integer, ParkPass>> getParkPasses() {
+    public Map<UUID, Map<Integer, ParkPass>> getParkPasses() {
         return parkPasses;
     }
 }
