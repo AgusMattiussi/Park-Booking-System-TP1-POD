@@ -16,6 +16,8 @@ import java.security.InvalidParameterException;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
+import static ar.edu.itba.pod.client.utils.ClientUtils.validateNullArgument;
+
 public class NotifyClient {
     private static final Logger logger = LoggerFactory.getLogger(NotifyClient.class);
     private static final CountDownLatch latch = new CountDownLatch(1);
@@ -29,6 +31,12 @@ public class NotifyClient {
         final String rideName = argMap.get(ClientUtils.RIDE_NAME);
         final String day = argMap.get(ClientUtils.DAY);
         final String visitorID = argMap.get(ClientUtils.VISITOR_ID);
+
+        validateNullArgument(serverAddress, "Server address not specified");
+        validateNullArgument(action, "Action not specified");
+        validateNullArgument(rideName, "Ride name not specified");
+        validateNullArgument(day, "Day not specified");
+        validateNullArgument(visitorID, "Visitor ID not specified");
 
         ManagedChannel channel = ClientUtils.buildChannel(serverAddress);
 
