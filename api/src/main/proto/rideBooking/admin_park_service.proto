@@ -6,14 +6,8 @@ import "rideBooking/models.proto";
 package rideBooking;
 
 service AdminParkService {
-  // 1. Agregar una atracción al parque
-  // return ride id
   rpc AddRide(AddRideRequest) returns(google.protobuf.BoolValue);
-  // 2. Agregar un pase de atracciones al parque
-  // return if pass is created
   rpc AddPassToPark(AddPassRequest) returns(google.protobuf.BoolValue);
-  // 3. Cargar la capacidad de los slots de una atracción
-  // return capacity id
   rpc AddSlotCapacity(AddSlotCapacityRequest) returns(SlotCapacityResponse);
 }
 
@@ -24,7 +18,6 @@ message AddRideRequest{
 }
 
 message AddPassRequest{
-  //id del visitante (en formato UUID), el tipo de pase y el día del año de validez
   string visitorId = 1;
   PassTypeEnum passType = 2;
   int32 validDay = 3;

@@ -3,10 +3,8 @@ syntax = "proto3";
 package rideBooking;
 
 service QueryService {
-  // 1. Consultar la capacidad sugerida, en base a las reservas pendientes, para todas las atracciones del parque para un día
   rpc queryCapacitySuggestion(QueryDayRequest) returns (CapacitySuggestionResponse);
 
-  // 2.  Consultar las reservas confirmadas para todas las atracciones del parque para un día
   rpc queryConfirmedBookings(QueryDayRequest) returns (ConfirmedBookingsResponse);
 }
 

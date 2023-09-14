@@ -22,14 +22,4 @@ public class RideRepositoryTest {
         repository.addRide("ride1", rideTime, 30);
         assertTrue(repository.getRides().containsKey("ride1"));
     }
-
-    @Test
-    public void testAddSlotsPerDay() {
-
-    }
-
-    @Test
-    public void testRidesExist() {
-        repository.rideExists("ride1");
-    }
 }

@@ -9,11 +9,8 @@ message RideTime{
 
 enum PassTypeEnum{
   UNKNOWN = 0;
-  //  cantidad ilimitada de atracciones del parque
   UNLIMITED =1;
-  //  hasta 3 atracciones del parque (hasta tres reservas pendientes o confirmadas)
   THREE = 2;
-  // cantidad ilimitada de atracciones del parque para los slots que inicien antes de las 14:00
   HALFDAY = 3;
 }
 

@@ -8,19 +8,11 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
-//TODO: Clase privada de Ride?
 public class RideTime implements GRPCModel<Models.RideTime> {
 
     private final ParkLocalTime open;
     private final ParkLocalTime  close;
     private final Duration timeSlotDuration;
-
-    //TODO: Eliminar si no se usa
-    public RideTime(ParkLocalTime open, ParkLocalTime close, Duration timeSlotDuration){
-        this.open = open;
-        this.close = close;
-        this.timeSlotDuration = timeSlotDuration;
-    }
 
     public RideTime(ParkLocalTime open, ParkLocalTime close, int durationInMinutes){
         if(open.isAfter(close))

@@ -31,11 +31,6 @@ public class ParkPassRepositoryTest {
     }
 
     @Test
-    public void testGetVisitorParkType(){
-//        assertEquals(Models.PassTypeEnum.UNLIMITED, repository.getVisitorParkType(id, 100));
-    }
-
-    @Test
     public void testHasValidPass(){
         assertFalse(repository.hasValidPass(id, 100));
     }

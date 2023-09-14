@@ -31,13 +31,11 @@ public class ParkPassRepository {
 
     private void checkPassExistence(UUID visitorId, int day){
         if(this.parkPasses.get(visitorId).containsKey(day)){
-//              si ya existe un pase para el visitante para el día indicado
             throw new AlreadyExistsException("There already exist a parkPass for the visitor for the day " + day);
         }
     }
 
 
-    //    Si el pase es halfDay y quiero reservas desp de las 14hs
     public boolean checkHalfDayPass(ParkLocalTime reservationTime){
         return reservationTime.isBefore(HALF_DAY_TIME);
     }
@@ -54,9 +52,6 @@ public class ParkPassRepository {
         return Optional.of(parkPass);
     }
 
-//    True si puedo seguir reservando, false si no puedo
-//    Chequeo si es half day que la reserva sea antes de las 14hs
-//    y si es three que no tenga 3 o mas ya hechas
     public boolean checkVisitorPass(UUID visitorId, int day){
         List<Reservation> reservationSet = new ArrayList<>();
         for (String rideName: rideRepository.getRides().keySet()) {

@@ -22,12 +22,6 @@ public class RideRepository {
     private static ParkPassRepository parkPassInstance = ParkPassRepository.getInstance();
     private final ConcurrentMap<String, Ride> rides;
 
-
-    // TODO: Considerar cual es el caso de uso mas comun para definir el mapeo
-    /* Maps ride name -> day -> time -> reservations */
-//    private final ConcurrentMap<String, ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>>> bookedRides;
-
-
     private RideRepository() {
         this.rides = new ConcurrentHashMap<>();
     }
@@ -85,12 +79,8 @@ public class RideRepository {
     }
 
     public Optional<Ride> addRide(String name, RideTime rideTime, int slotTime) {
-//        Falla:
-//        si existe una atracción con ese nombre
         checkRideName(name);
-//        si los valores de los horarios son inválidos
         invalidTime(rideTime.getOpen(), rideTime.getClose());
-//        si con los valores provistos no existe un slot posible.
         checkValidSlot(rideTime, slotTime);
         Ride ride = new Ride(name, rideTime);
         this.rides.put(ride.getName(), ride);
@@ -98,26 +88,17 @@ public class RideRepository {
     }
 
     public Optional<ParkPass> addParkPass(UUID visitorId, Models.PassTypeEnum type, int day) {
-//        Falla:
-//        si el tipo de pase es inválido
         invalidPass(type);
-//        si el día del año es inválido.
         validateDay(day);
         return parkPassInstance.addParkPass(visitorId, type, day);
     }
 
     private void addSlotsExceptions(String rideName, int day, int capacity){
-//        Falla:
-//        si la atracción no existe
         invalidRideName(rideName);
-//        si el día es inválido
         validateDay(day);
-//        si la capacidad es negativa
         invalidCapacity(capacity);
     }
 
-
-    //TODO: Chequar funcionamiento
     public AdminParkServiceOuterClass.SlotCapacityResponse addSlotsPerDay(String rideName, int day, int capacity){
         addSlotsExceptions(rideName, day, capacity);
         Ride ride = getRide(rideName);
@@ -166,11 +147,6 @@ public class RideRepository {
         return this.rides.containsKey(name);
     }
 
-    public boolean removeRide(String name) {
-        return this.rides.remove(name) != null;
-    }
-
-
     public NavigableSet<Reservation> getReservationsByTimeSlot(String rideName, int day, ParkLocalTime timeSlot){
         ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> reservationsByTime = getReservationsByDay(rideName, day);
         if(reservationsByTime != null)
@@ -190,18 +166,6 @@ public class RideRepository {
         return rideReservations.get(day);
     }
 
-
-    /*
-     *  Books a ride for a visitor
-     *
-     *  FAIL CONDITIONS:
-     *  - Reservation already exists
-     *  - Invalid pass
-     *  - No ride under that name
-     *  - Invalid date
-     *  - Invalid time slot
-     *
-     */
     // TODO: Agregar locks para el caso donde dos hilos piensan que queda 1 slot y ambos lo reservan
     public ReservationState bookRide(String rideName, int day, ParkLocalTime timeSlot, UUID visitorId) {
         Ride ride = getRide(rideName);
@@ -225,7 +189,6 @@ public class RideRepository {
         return Optional.empty();
     }
 
-    // FIXME: Muy costoso. Tiene sentido agregar otro nivel de indireccion para que sea mas eficiente?
     public List<Reservation> getUserReservationsByDay(String rideName, int day, UUID visitorId){
         ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> reservations = getReservationsByDay(rideName, day);
         if(reservations != null) {
@@ -237,20 +200,6 @@ public class RideRepository {
         return null;
     }
 
-
-    /*
-     *  Confirms a previously booked ride
-     *
-     *  FAIL CONDITIONS:
-     *  - Ride slots not loaded yet
-     *  - Reservation does not exist
-     *  - Reservation already confirmed
-     *  - Invalid pass
-     *  - No ride under that name
-     *  - Invalid date
-     *  - Invalid time slot
-     *
-     */
     public void confirmBooking(String rideName, int day, ParkLocalTime timeSlot, UUID visitorId){
         Ride ride = getRide(rideName);
         Models.PassTypeEnum passType = parkPassInstance.getVisitorParkType(visitorId, day);
@@ -270,17 +219,6 @@ public class RideRepository {
         reservation.setConfirmed();
     }
 
-    /*
-     *  Cancels a previously booked ride
-     *
-     *  FAIL CONDITIONS:
-     *  - Reservation does not exist
-     *  - Invalid pass
-     *  - No ride under that name
-     *  - Invalid date
-     *  - Invalid time slot
-     *
-     */
     public void cancelBooking(String rideName, int day, ParkLocalTime timeSlot, UUID visitorId) {
         Ride ride = getRide(rideName);
         Models.PassTypeEnum passType = parkPassInstance.getVisitorParkType(visitorId, day);
@@ -386,7 +324,6 @@ public class RideRepository {
         return rideAvailability;
     }
 
-    // TODO: Implementar aca
     private int countStateForTimeSlot(String rideName, int day, ParkLocalTime timeSlot, ReservationState state) {
         NavigableSet<Reservation> reservations = getReservationsByTimeSlot(rideName, day, timeSlot);
         if(reservations == null)
