@@ -120,7 +120,7 @@ public class RideRepository {
     //TODO: Chequar funcionamiento
     public AdminParkServiceOuterClass.SlotCapacityResponse addSlotsPerDay(String rideName, int day, int capacity){
         addSlotsExceptions(rideName, day, capacity);
-        Ride ride = this.rides.get(rideName);
+        Ride ride = getRide(rideName);
         return ride.addSlotCapacityPerDay(parkPassInstance, day, capacity);
     }
 
@@ -356,21 +356,27 @@ public class RideRepository {
 
     private Map<ParkLocalTime, RideAvailability> getRideAvailability(String rideName, ParkLocalTime startTimeSlot, ParkLocalTime endTimeSlot, int day){
         Ride ride = getRide(rideName);
-
+        System.out.println("Adentrito 1");
         if (startTimeSlot.isAfter(endTimeSlot))
             throw new IllegalArgumentException("Start time slot must be before end time slot");
-
-        Map<ParkLocalTime, RideAvailability> timeSlotAvailability = new HashMap<>();
+        System.out.println("Adentrito 2");
+        Map<ParkLocalTime, RideAvailability> timeSlotAvailability = new TreeMap<>();
         List<ParkLocalTime> timeSlots;
-        if(!endTimeSlot.equals(startTimeSlot))
+        if(!endTimeSlot.equals(startTimeSlot)) {
+            System.out.println("Adentrito 2.1");
             timeSlots = ride.getTimeSlotsBetween(startTimeSlot, endTimeSlot);
+        }
         else {
+            System.out.println("Adentrito 2.2");
             timeSlots = new ArrayList<>(Collections.singletonList(startTimeSlot));
         }
+        System.out.println("Adentrito 3");
 
         for (ParkLocalTime currentTimeSlot : timeSlots) {
+            System.out.println("slot: " + currentTimeSlot);
             timeSlotAvailability.put(currentTimeSlot, getRideAvailabilityForTimeSlot(rideName, currentTimeSlot, day));
         }
+        System.out.println("Adentrito 4");
         return timeSlotAvailability;
     }
 
@@ -388,10 +394,11 @@ public class RideRepository {
 
     public Map<String, Map<ParkLocalTime, RideAvailability>> getRidesAvailability(ParkLocalTime startTimeSlot, ParkLocalTime endTimeSlot, int day) {
         Map<String, Map<ParkLocalTime, RideAvailability>> rideAvailability = new HashMap<>();
-
-        for (String rideName : rides.keySet())
+        System.out.println("ACA adentro");
+        for (String rideName : rides.keySet()) {
+            System.out.println("ridename: " + rideName);
             rideAvailability.put(rideName, getRideAvailability(rideName, startTimeSlot, endTimeSlot, day));
-
+        }
         return rideAvailability;
     }
 

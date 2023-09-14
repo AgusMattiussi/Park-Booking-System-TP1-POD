@@ -31,21 +31,24 @@ public class RideBookingService extends RideBookingServiceGrpc.RideBookingServic
 
     @Override
     public void getRideAvailability(GetRideAvailabilityRequest request, StreamObserver<GetRideAvailabilityResponse> responseObserver) {
-
+        System.out.println("ACA 1");
         GetRideAvailabilityRequestModel requestModel = GetRideAvailabilityRequestModel.fromGetRideAvailabilityRequest(request);
-
+        System.out.println("ACA 2");
         // TODO: Y si resuelvo esto adentro de RideRepository?
         Map<String, Map<ParkLocalTime, RideAvailability>> ridesAvailability;
         if(requestModel.getRideName() != null){
+            System.out.println("ACA 3");
             if(requestModel.getEndTimeSlot() != null)
                 ridesAvailability = rideRepository.getRidesAvailability(requestModel.getRideName(), requestModel.getStartTimeSlot(), requestModel.getEndTimeSlot(), requestModel.getDay());
             else
                 ridesAvailability = rideRepository.getRidesAvailability(requestModel.getRideName(), requestModel.getStartTimeSlot(), requestModel.getDay());
         } else {
+            System.out.println("ACA 4");
             ridesAvailability = rideRepository.getRidesAvailability(requestModel.getStartTimeSlot(), requestModel.getEndTimeSlot(), requestModel.getDay());
         }
-
+        System.out.println("ACA 5");
         responseObserver.onNext(buildGetRideAvailabilityResponse(ridesAvailability));
+        System.out.println("ACA 6");
         responseObserver.onCompleted();
     }
 
