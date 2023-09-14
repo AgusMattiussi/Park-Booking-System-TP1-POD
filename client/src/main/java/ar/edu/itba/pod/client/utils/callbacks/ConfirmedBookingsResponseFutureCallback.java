@@ -18,13 +18,16 @@ public class ConfirmedBookingsResponseFutureCallback extends CustomFutureCallbac
 
     @Override
     public void onSuccess(QueryServiceOuterClass.ConfirmedBookingsResponse confirmedBookingsResponse) {
-        System.out.printf("Successfully generated output file %s\n", outPath);
         List<QueryServiceOuterClass.ConfirmedBooking> list = confirmedBookingsResponse.getConfirmedBookingsList();
         generateConfirmedQueryFileContent(list, outPath);
         getLatch().countDown();
     }
 
     private static void generateConfirmedQueryFileContent(List<QueryServiceOuterClass.ConfirmedBooking> list, String outPath){
+        if(list.isEmpty()) {
+            System.out.println("No confirmed bookings for specified day");
+            return;
+        }
         StringBuilder sb = new StringBuilder();
         sb.append("Slot\t| Visitor\t\t\t\t\t\t\t\t| Ride\n");
         for(QueryServiceOuterClass.ConfirmedBooking confirmedBooking : list){

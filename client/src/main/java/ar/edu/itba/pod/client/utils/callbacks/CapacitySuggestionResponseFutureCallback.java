@@ -19,13 +19,16 @@ public class CapacitySuggestionResponseFutureCallback extends CustomFutureCallba
 
     @Override
     public void onSuccess(QueryServiceOuterClass.CapacitySuggestionResponse capacitySuggestionResponse) {
-        System.out.printf("Successfully generated output file %s\n", outPath);
         List<QueryServiceOuterClass.CapacitySuggestion> list = capacitySuggestionResponse.getCapacitySuggestionsList();
         generateCapacityQueryFileContent(list, outPath);
         getLatch().countDown();
     }
 
     private static void generateCapacityQueryFileContent(List<QueryServiceOuterClass.CapacitySuggestion> list, String outPath){
+        if(list.isEmpty()) {
+            System.out.println("No rides in the park");
+            return;
+        }
         StringBuilder sb = new StringBuilder();
         sb.append("Slot\t| Capacity  | Ride\n");
         for(QueryServiceOuterClass.CapacitySuggestion capacitySuggestion : list){
