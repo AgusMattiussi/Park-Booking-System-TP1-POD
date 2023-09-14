@@ -148,18 +148,18 @@ public class RideRepository {
     }
 
     public NavigableSet<Reservation> getReservationsByTimeSlot(String rideName, int day, ParkLocalTime timeSlot){
-        ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> reservationsByTime = getReservationsByDay(rideName, day);
+        Map<String, ConcurrentSkipListSet<Reservation>> reservationsByTime = getReservationsByDay(rideName, day);
         if(reservationsByTime != null)
             return reservationsByTime.get(timeSlot.toString());
         return null;
     }
 
-    public ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> getReservationsByDay(String rideName, int day){
+    public Map<String, ConcurrentSkipListSet<Reservation>> getReservationsByDay(String rideName, int day){
         Ride ride = rides.get(rideName);
         if(ride == null)
             throw new RideNotFoundException(String.format("Ride '%s' does not exist", rideName));
 
-        ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> rideReservations = ride.getBookedSlots();
+        Map<Integer, Map<String, ConcurrentSkipListSet<Reservation>>> rideReservations = ride.getBookedSlots();
         if(rideReservations == null)
             return null;
 
@@ -180,16 +180,15 @@ public class RideRepository {
     private Optional<Reservation> getReservation(String rideName, int day, ParkLocalTime timeSlot, UUID visitorId){
         NavigableSet<Reservation> reservations = getReservationsByTimeSlot(rideName, day, timeSlot);
         if(reservations != null) {
-            /* It is more efficient to create a new reservation and compare it to the ones in the set than filtering the set */
             Reservation reservation = new Reservation(rideName, visitorId, ReservationState.UNKNOWN_STATE, day, timeSlot);
             if (reservations.contains(reservation))
-                return Optional.of(reservations.floor(reservation));  // Will not return null because the reservation is in the set
+                return Optional.of(reservations.floor(reservation));
         }
         return Optional.empty();
     }
 
     public List<Reservation> getUserReservationsByDay(String rideName, int day, UUID visitorId){
-        ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> reservations = getReservationsByDay(rideName, day);
+        Map<String, ConcurrentSkipListSet<Reservation>> reservations = getReservationsByDay(rideName, day);
         if(reservations != null) {
             return reservations.values().stream()
                     .flatMap(Collection::stream)
@@ -256,7 +255,6 @@ public class RideRepository {
     public void registerForNotifications(UUID visitorId, String rideName, int day, StreamObserver<NotifyServiceOuterClass.Notification> notificationObserver) {
         List<Reservation> reservations = getUserReservationsByDayAndValidateParameters(visitorId, rideName, day);
 
-        /* Register all reservations for notifications */
         reservations.forEach(reservation -> {
             reservation.registerForNotifications(notificationObserver);
             reservation.notifyRegistered();
@@ -267,7 +265,6 @@ public class RideRepository {
     public StreamObserver<NotifyServiceOuterClass.Notification> unregisterForNotifications(UUID visitorId, String rideName, int day) {
         List<Reservation> reservations = getUserReservationsByDayAndValidateParameters(visitorId, rideName, day);
 
-        /* All these reservations share the same notificationObserver */
         StreamObserver<NotifyServiceOuterClass.Notification> notificationObserver = null;
         for (Reservation reservation : reservations) {
             notificationObserver = reservation.unregisterForNotifications();
@@ -275,7 +272,6 @@ public class RideRepository {
         return notificationObserver;
     }
 
-    /* Returns the availability for a ride in a given day and time slot */
     private RideAvailability getRideAvailabilityForTimeSlot(String rideName, ParkLocalTime timeSlot, int day) {
         Ride ride = getRide(rideName);
         validateDay(day);

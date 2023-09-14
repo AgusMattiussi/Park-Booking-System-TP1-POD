@@ -4,7 +4,6 @@ import ar.edu.itba.pod.client.utils.ClientUtils;
 import ar.edu.itba.pod.client.utils.callbacks.BookRideResponseFutureCallback;
 import ar.edu.itba.pod.client.utils.callbacks.GetRideAvailabilityResponseFutureCallback;
 import ar.edu.itba.pod.client.utils.callbacks.GetRideResponseFutureCallback;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.Empty;
@@ -140,7 +139,7 @@ public class BookingClient {
 
         try {
             logger.info("Waiting for response...");
-            latch.await(); // Espera hasta que la operación esté completa
+            latch.await();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             logger.error(e.getMessage());

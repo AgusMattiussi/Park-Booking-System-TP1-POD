@@ -22,15 +22,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-//TODO: Cambiar las colecciones a su version concurrente
-//TODO: Cambiar a Atomics
 public class Ride implements GRPCModel<RideBookingServiceOuterClass.Ride> {
 
     private final String name;
     private final RideTime rideTime;
     private final Map<Integer, Map<String, AtomicInteger>> slotsLeftByDayAndTimeSlot;
     private final Map<Integer, Integer> slotCapacityByDay;
-    private final ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> bookedSlots;
+    private final Map<Integer, Map<String, ConcurrentSkipListSet<Reservation>>> bookedSlots;
     private final Lock slotCapacityLock;
     private final Map<Integer, ReentrantLock> dayLocks;
 
@@ -128,7 +126,7 @@ public class Ride implements GRPCModel<RideBookingServiceOuterClass.Ride> {
         return getSlotCapacityForDay(day) != -1;
     }
 
-    public ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> getBookedSlots() {
+    public Map<Integer, Map<String, ConcurrentSkipListSet<Reservation>>> getBookedSlots() {
         return bookedSlots;
     }
 
@@ -143,7 +141,7 @@ public class Ride implements GRPCModel<RideBookingServiceOuterClass.Ride> {
             bookedSlots.putIfAbsent(day, new ConcurrentHashMap<>());
 
             Map<String, AtomicInteger> daySlots = slotsLeftByDayAndTimeSlot.get(day);
-            ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> bookedDaySlots = bookedSlots.get(day);
+            Map<String, ConcurrentSkipListSet<Reservation>> bookedDaySlots = bookedSlots.get(day);
             List<String> times = rideTime.getTimeSlotsAsStrings();
 
 
@@ -271,7 +269,7 @@ public class Ride implements GRPCModel<RideBookingServiceOuterClass.Ride> {
 
         bookedSlots.putIfAbsent(day, new ConcurrentHashMap<>());
 
-        ConcurrentMap<String,ConcurrentSkipListSet<Reservation>> reservations = bookedSlots.get(day);
+        Map<String,ConcurrentSkipListSet<Reservation>> reservations = bookedSlots.get(day);
 
         boolean isCapacitySet = this.isSlotCapacitySet(day);
         ReservationState state = isCapacitySet ? ReservationState.CONFIRMED : ReservationState.PENDING;

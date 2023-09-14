@@ -12,7 +12,6 @@ import rideBooking.QueryServiceOuterClass.CapacitySuggestionResponse;
 import rideBooking.QueryServiceOuterClass.ConfirmedBookingsResponse;
 import rideBooking.Models.ReservationState;
 import java.util.*;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
@@ -44,7 +43,7 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
             if(!ride.isSlotCapacitySet(day)) {
                 String rideName = ride.getName();
 
-                ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> reservationsForQueryDay = repository.getReservationsByDay(rideName, day);
+                Map<String, ConcurrentSkipListSet<Reservation>> reservationsForQueryDay = repository.getReservationsByDay(rideName, day);
                 int pendingBookings;
 
                 if(reservationsForQueryDay != null) {
@@ -91,7 +90,7 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
         rides.values().forEach(ride -> {
             String rideName = ride.getName();
 
-            ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> reservationsForQueryDay = repository.getReservationsByDay(rideName, day);
+            Map<String, ConcurrentSkipListSet<Reservation>> reservationsForQueryDay = repository.getReservationsByDay(rideName, day);
 
             if(reservationsForQueryDay != null) {
                 for (Map.Entry<String, ConcurrentSkipListSet<Reservation>> entry : reservationsForQueryDay.entrySet()) {
