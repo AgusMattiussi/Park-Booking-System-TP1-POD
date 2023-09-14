@@ -230,7 +230,9 @@ public class RideRepository {
         if(reservations == null || !reservations.remove(toRemove))
             throw new ReservationNotFoundException(String.format(
                     "Reservation not found for visitor '%s' at ride '%s' at time slot '%s'", visitorId, rideName, timeSlot));
-        ride.incrementCapacity(day, timeSlot);
+
+        if(ride.isSlotCapacitySet(day))
+            ride.incrementCapacity(day, timeSlot);
     }
 
 

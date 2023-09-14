@@ -94,7 +94,7 @@ public class BookingClient {
                         Runnable::run);
             }
             case "confirm" -> {
-                final String rideName = argMap.get(ClientUtils.RIDE_NAME);
+                final String rideName = argMap.get(ClientUtils.ATTRACTION);
                 final String day = argMap.get(ClientUtils.DAY);
                 final String bookingSlot = argMap.get(ClientUtils.BOOKING_SLOT);
                 final String visitorId = argMap.get(ClientUtils.VISITOR_ID);
@@ -116,7 +116,7 @@ public class BookingClient {
                         Runnable::run);
             }
             case "cancel" -> {
-                final String rideName = argMap.get(ClientUtils.RIDE_NAME);
+                final String rideName = argMap.get(ClientUtils.ATTRACTION);
                 final String day = argMap.get(ClientUtils.DAY);
                 final String bookingSlot = argMap.get(ClientUtils.BOOKING_SLOT);
                 final String visitorId = argMap.get(ClientUtils.VISITOR_ID);
