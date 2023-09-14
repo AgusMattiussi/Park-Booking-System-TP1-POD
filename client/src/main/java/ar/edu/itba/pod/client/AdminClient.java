@@ -3,7 +3,6 @@ package ar.edu.itba.pod.client;
 import ar.edu.itba.pod.client.utils.ClientUtils;
 import ar.edu.itba.pod.client.utils.callbacks.BoolValueFutureCallback;
 import ar.edu.itba.pod.client.utils.callbacks.SlotCapacityResponseFutureCallback;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.BoolValue;
@@ -21,7 +20,6 @@ import java.io.IOException;
 import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -35,11 +33,14 @@ public class AdminClient {
     private static CountDownLatch latch;
 
     public static void main(String[] args) throws InterruptedException {
-        logger.info("Admin Client Starting ...");
+        logger.info("Admin Client Starting...");
 
         Map<String, String> argMap = parseArguments(args);
         final String serverAddress = getArgumentValue(argMap, SERVER_ADDRESS);
         final String action = getArgumentValue(argMap, ACTION_NAME);
+
+        validateNullArgument(serverAddress, "Ride name not specified");
+        validateNullArgument(action, "Action not specified");
 
         ManagedChannel channel = ClientUtils.buildChannel(serverAddress);
 
@@ -53,6 +54,11 @@ public class AdminClient {
                 final String rideName = getArgumentValue(argMap, RIDE_NAME);
                 final String day = getArgumentValue(argMap, DAY);
                 final String capacity = getArgumentValue(argMap, CAPACITY);
+
+                validateNullArgument(rideName, "Ride name not specified");
+                validateNullArgument(day, "Day not specified");
+                validateNullArgument(capacity, "Capacity not specified");
+
                 latch = new CountDownLatch(1);
 
                 AddSlotCapacityRequest addSlotCapacityRequest = AddSlotCapacityRequest.newBuilder()
@@ -67,6 +73,8 @@ public class AdminClient {
             }
             case "rides" -> {
                 final String inPath = ClientUtils.getArgumentValue(argMap, INPUT_PATH);
+                validateNullArgument(inPath, "Input path not specified");
+
                 List<String[]> csvData = getCSVData(inPath);
                 latch = new CountDownLatch(csvData.size());
 
@@ -81,8 +89,10 @@ public class AdminClient {
                     Futures.addCallback(result, new BoolValueFutureCallback(logger, latch, added, couldNotAdd), Runnable::run);
                 }
             }
-            case "passes" -> {
+            case "tickets" -> {
                 final String inPath = ClientUtils.getArgumentValue(argMap, INPUT_PATH);
+                validateNullArgument(inPath, "Input path not specified");
+
                 List<String[]> csvData = getCSVData(inPath);
                 latch = new CountDownLatch(csvData.size());
 
@@ -100,7 +110,7 @@ public class AdminClient {
         }
 
         try {
-            logger.info("Waiting for response ...");
+            logger.info("Waiting for response...");
             latch.await();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -133,7 +143,7 @@ public class AdminClient {
                 .build();
 
         try(CSVReader csvReader = new CSVReaderBuilder(filereader)
-                .withSkipLines(1) //first lines are titles => skip them
+                .withSkipLines(1)
                 .withCSVParser(parser)
                 .build()) {
             return csvReader.readAll();
