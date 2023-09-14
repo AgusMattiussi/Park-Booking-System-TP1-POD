@@ -46,8 +46,8 @@ public class AdminClient {
         AdminParkServiceGrpc.AdminParkServiceFutureStub stub = AdminParkServiceGrpc.newFutureStub(channel);
 
 
-        final AtomicInteger added = new AtomicInteger();
-        final AtomicInteger couldNotAdd = new AtomicInteger();
+        final AtomicInteger added = new AtomicInteger(0);
+        final AtomicInteger couldNotAdd = new AtomicInteger(0);
 
         if(Objects.equals(action, "slots")){
             final String rideName = getArgumentValue(argMap, RIDE_NAME);

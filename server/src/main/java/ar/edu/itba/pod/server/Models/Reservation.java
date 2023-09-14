@@ -118,6 +118,7 @@ public class Reservation implements Comparable<Reservation> {
         notifyState(ReservationState.CANCELLED);
     }
 
+
     //FIXME: Va a devolver la misma notificacion para cada Reservation del dia
     public void notifySlotsCapacityAdded(int capacity){
         notifyVisitor(String.format("%s announced slot capacity for the day %d: %d places.", rideName, day, capacity));
@@ -155,6 +156,10 @@ public class Reservation implements Comparable<Reservation> {
 
     public boolean isRelocated(){
         return this.state == ReservationState.RELOCATED;
+    }
+
+    public boolean isPending(){
+        return this.state == ReservationState.PENDING;
     }
 
     @Override

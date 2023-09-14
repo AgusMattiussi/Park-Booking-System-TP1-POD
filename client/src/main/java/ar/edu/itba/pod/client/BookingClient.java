@@ -60,7 +60,11 @@ public class BookingClient {
                 Futures.addCallback(result, new FutureCallback<>() {
                     @Override
                     public void onSuccess(RideBookingServiceOuterClass.GetRideResponse getRideResponse) {
-                        //TODO: Embellecer
+                        System.out.printf("%-8s- | %-8s- | %-8s- | %-9s- | %-14s%n", "Slot", "Capacity", "Pending", "Confirmed", "Attraction");
+
+                        System.out.printf("%-8s | %-8s | %-8s | %-8s | %-14s%n", "15:30", "30", "0", "30", "SpaceMountain");
+                        System.out.printf("%-8s | %-8s | %-8s | %-8s | %-14s%n", "15:45", "30", "3", "27", "SpaceMountain");
+                        System.out.printf("%-8s | %-8s | %-8s | %-8s | %-14s%n", "16:00", "30", "0", "5", "SpaceMountain");
                         System.out.printf("Rides: %d\n", getRideResponse.getRidesCount());
                         getRideResponse.getRidesList().forEach(ride -> System.out.printf("%s - From %s to %s\n",
                                 ride.getName().getValue(),
