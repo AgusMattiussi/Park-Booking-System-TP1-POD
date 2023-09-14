@@ -17,13 +17,13 @@ Para ejecutar el servidor, se deben ejecutar los siguientes comandos en la carpe
 cd ./tmp/tpe1-g6-server-2023.2Q/
 ./run-server
 ```
-
+El servidor por defecto corre en el puerto `50055` 
 
 ### Cliente de Administración del Parque
 Para ejecutar el cliente de administración del parque, se deben ejecutar los siguientes comandos en la carpeta raíz del proyecto:
 ```bash
 cd ./tmp/tpe1-g6-client-2023.2Q/
-./admin-cli -DserverAddress=xx.xx.xx.xx:yyyy -Daction=actionName [ -DinPath=filename | -Dride=rideName | -Dday=dayOfYear | -Dcapacity=amount ]
+./admin-cli -DserverAddress=xx.xx.xx.xx:50055 -Daction=actionName [ -DinPath=filename | -Dride=rideName | -Dday=dayOfYear | -Dcapacity=amount ]
 ````
 
 
@@ -31,7 +31,7 @@ cd ./tmp/tpe1-g6-client-2023.2Q/
 Para ejecutar el cliente de reserva de atracciones, se deben ejecutar los siguientes comandos en la carpeta raíz del proyecto:
 ```bash
 cd ./tmp/tpe1-g6-client-2023.2Q/
-./book-cli -DserverAddress=xx.xx.xx.xx:yyyy -Daction=actionName [ -Dday=dayOfYear -Dattraction=rideName -Dvisitor=visitorId -Dslot=bookingSlot -DslotTo=bookingSlotTo ]
+./book-cli -DserverAddress=xx.xx.xx.xx:50055 -Daction=actionName [ -Dday=dayOfYear -Dattraction=rideName -Dvisitor=visitorId -Dslot=bookingSlot -DslotTo=bookingSlotTo ]
 ```
 
 
@@ -39,7 +39,7 @@ cd ./tmp/tpe1-g6-client-2023.2Q/
 Para ejecutar el cliente de notificaciones de una atracción, se deben ejecutar los siguientes comandos en la carpeta raíz del proyecto:
 ```bash
 cd ./tmp/tpe1-g6-client-2023.2Q/
-./notif-cli -DserverAddress=xx.xx.xx.xx:yyyy -Daction=actionName -Dday=dayOfYear -Dride=rideName -Dvisitor=visitorId
+./notif-cli -DserverAddress=xx.xx.xx.xx:50055 -Daction=actionName -Dday=dayOfYear -Dride=rideName -Dvisitor=visitorId
 ```
 
 
@@ -47,7 +47,7 @@ cd ./tmp/tpe1-g6-client-2023.2Q/
 Para ejecutar el cliente de consulta, se deben ejecutar los siguientes comandos en la carpeta raíz del proyecto:
 ```bash
 cd ./tmp/tpe1-g6-client-2023.2Q/
-./query-cli -DserverAddress=xx.xx.xx.xx:yyyy -Daction=actionName -DoutPath=query.txt
+./query-cli -DserverAddress=xx.xx.xx.xx:50055 -Daction=actionName -DoutPath=query.txt
 ```
 
 
