@@ -1,6 +1,7 @@
 package ar.edu.itba.pod.client;
 
 import ar.edu.itba.pod.client.utils.ClientUtils;
+import ar.edu.itba.pod.client.utils.callbacks.BoolValueFutureCallback;
 import ar.edu.itba.pod.client.utils.callbacks.SlotCapacityResponseFutureCallback;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -17,6 +18,7 @@ import rideBooking.AdminParkServiceGrpc;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -30,89 +32,92 @@ import static ar.edu.itba.pod.client.utils.ClientUtils.*;
 
 public class AdminClient {
     private static final Logger logger = LoggerFactory.getLogger(AdminClient.class);
-    private static final CountDownLatch latch = new CountDownLatch(1);
+    private static CountDownLatch latch;
 
     public static void main(String[] args) throws InterruptedException {
         logger.info("Admin Client Starting ...");
 
         Map<String, String> argMap = parseArguments(args);
         final String serverAddress = getArgumentValue(argMap, SERVER_ADDRESS);
-        final String action = getArgumentValue(argMap, ACTION_NAME);;
+        final String action = getArgumentValue(argMap, ACTION_NAME);
 
         ManagedChannel channel = ClientUtils.buildChannel(serverAddress);
 
         AdminParkServiceGrpc.AdminParkServiceFutureStub stub = AdminParkServiceGrpc.newFutureStub(channel);
 
-
         final AtomicInteger added = new AtomicInteger(0);
         final AtomicInteger couldNotAdd = new AtomicInteger(0);
 
-        if(Objects.equals(action, "slots")){
-            final String rideName = getArgumentValue(argMap, RIDE_NAME);
-            final String day = getArgumentValue(argMap, DAY);
-            final String capacity = getArgumentValue(argMap, CAPACITY);
+        switch (action){
+            case "slots" -> {
+                final String rideName = getArgumentValue(argMap, RIDE_NAME);
+                final String day = getArgumentValue(argMap, DAY);
+                final String capacity = getArgumentValue(argMap, CAPACITY);
+                latch = new CountDownLatch(1);
 
-            AddSlotCapacityRequest addSlotCapacityRequest = AddSlotCapacityRequest.newBuilder().setRideName(rideName).setSlotCapacity(Integer.parseInt(capacity)).setValidDay(Integer.parseInt(day)).build();
+                AddSlotCapacityRequest addSlotCapacityRequest = AddSlotCapacityRequest.newBuilder()
+                        .setRideName(rideName)
+                        .setSlotCapacity(Integer.parseInt(capacity))
+                        .setValidDay(Integer.parseInt(day))
+                        .build();
 
-            ListenableFuture<SlotCapacityResponse> result = stub.addSlotCapacity(addSlotCapacityRequest);
-            Futures.addCallback(result, new SlotCapacityResponseFutureCallback(logger, latch, rideName, day, capacity),
-                    Runnable::run);
+                ListenableFuture<SlotCapacityResponse> result = stub.addSlotCapacity(addSlotCapacityRequest);
+                Futures.addCallback(result, new SlotCapacityResponseFutureCallback(logger, latch, rideName, day, capacity),
+                        Runnable::run);
+            }
+            case "rides" -> {
+                final String inPath = ClientUtils.getArgumentValue(argMap, INPUT_PATH);
+                List<String[]> csvData = getCSVData(inPath);
+                latch = new CountDownLatch(csvData.size());
 
-        }else{
-            final String inPath = ClientUtils.getArgumentValue(argMap, INPUT_PATH);
-            List<String[]> csvData = getCSVData(inPath);
-            for (String[] data : csvData) {
-                ListenableFuture<BoolValue> result;
-                if (Objects.equals(action, "rides")) {
+                for (String[] data : csvData) {
+                    ListenableFuture<BoolValue> result;
+
                     final String rideName = data[0];
                     Models.RideTime rideTime = Models.RideTime.newBuilder().setOpen(data[1]).setClose(data[2]).build();
                     AddRideRequest addRideRequest = AddRideRequest.newBuilder().setRideName(rideName).setRideTime(rideTime).setSlotMinutes(Integer.parseInt(data[3])).build();
                     result = stub.addRide(addRideRequest);
-                }else {
+
+                    Futures.addCallback(result, new BoolValueFutureCallback(logger, latch, added, couldNotAdd), Runnable::run);
+                }
+            }
+            case "passes" -> {
+                final String inPath = ClientUtils.getArgumentValue(argMap, INPUT_PATH);
+                List<String[]> csvData = getCSVData(inPath);
+                latch = new CountDownLatch(csvData.size());
+
+                for (String[] data : csvData) {
+                    ListenableFuture<BoolValue> result;
+
                     int passEnumInfo = Models.PassTypeEnum.valueOf(data[1]).getNumber();
                     AddPassRequest addPassRequest = AddPassRequest.newBuilder().setVisitorId(data[0]).setPassTypeValue(passEnumInfo).setValidDay(Integer.parseInt(data[2])).build();
                     result = stub.addPassToPark(addPassRequest);
+
+                    Futures.addCallback(result, new BoolValueFutureCallback(logger, latch, added, couldNotAdd), Runnable::run);
                 }
-                couldAdd(added, couldNotAdd, result);
             }
+            default -> throw new InvalidParameterException(String.format("Action '%s' not supported", action));
         }
 
         try {
             logger.info("Waiting for response ...");
-            latch.await(); // Espera hasta que la operación esté completa
-            if(!Objects.equals(action, "slots")){
-                String s = Objects.equals(action, "rides") ? " attractions" : " passes";
-                int couldNotAddNum = couldNotAdd.get();
-                if(couldNotAddNum >0){
-                    System.out.printf("Cannot add %d %s\n", couldNotAddNum, s);
-                }
-                System.out.printf("%d %s added\n", added.get(), s);
-            }
+            latch.await();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             logger.error(e.getMessage());
         }
-    }
 
-    private static void couldAdd(AtomicInteger added, AtomicInteger couldNotAdd, ListenableFuture<BoolValue> result) {
-        Futures.addCallback(result, new FutureCallback<>() {
-            @Override
-            public void onSuccess(BoolValue created) {
-                if (created.getValue()){
-                    added.incrementAndGet();
-                }else {
-                    couldNotAdd.incrementAndGet();
-                }
-                latch.countDown();
-            }
+        if(action.equals("rides") || action.equals("passes")){
+            String s = action.equals("rides") ? " attractions" : " passes";
+            int couldNotAddCount = couldNotAdd.get();
+            int addedCount = added.get();
 
-            @Override
-            public void onFailure(Throwable throwable) {
-                latch.countDown();
-                logger.error(throwable.getMessage());
-            }
+            if(couldNotAddCount > 0)
+                System.out.printf("Cannot add %d %s\n", couldNotAddCount, s);
 
-        }, Runnable::run);
+            System.out.printf("%d %s added\n", addedCount, s);
+
+        }
     }
 
     private static List<String[]> getCSVData(String inPath) {
