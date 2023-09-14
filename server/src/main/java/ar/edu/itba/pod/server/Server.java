@@ -1,10 +1,10 @@
 package ar.edu.itba.pod.server;
 
 import ar.edu.itba.pod.server.exceptions.GlobalExceptionHandlerInterceptor;
-import ar.edu.itba.pod.server.server.AdminParkServer;
-import ar.edu.itba.pod.server.server.NotifyService;
-import ar.edu.itba.pod.server.server.QueryService;
-import ar.edu.itba.pod.server.server.RideBookingService;
+import ar.edu.itba.pod.server.services.AdminParkService;
+import ar.edu.itba.pod.server.services.NotifyService;
+import ar.edu.itba.pod.server.services.QueryService;
+import ar.edu.itba.pod.server.services.RideBookingService;
 import io.grpc.BindableService;
 import io.grpc.ServerBuilder;
 import io.grpc.ServerInterceptors;
@@ -29,7 +29,7 @@ public class Server {
                 .addService(handledService.apply(new RideBookingService()))
                 .addService(handledService.apply(new QueryService()))
                 .addService(handledService.apply(new NotifyService()))
-                .addService(handledService.apply(new AdminParkServer()))
+                .addService(handledService.apply(new AdminParkService()))
                 .build();
         server.start();
         logger.info("Server started, listening on " + port);

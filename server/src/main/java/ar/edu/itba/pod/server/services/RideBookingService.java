@@ -1,4 +1,4 @@
-package ar.edu.itba.pod.server.server;
+package ar.edu.itba.pod.server.services;
 
 import ar.edu.itba.pod.server.Models.ParkLocalTime;
 import ar.edu.itba.pod.server.Models.RideAvailability;

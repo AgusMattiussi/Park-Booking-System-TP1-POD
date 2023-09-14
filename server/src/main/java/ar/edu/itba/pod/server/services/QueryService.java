@@ -1,4 +1,4 @@
-package ar.edu.itba.pod.server.server;
+package ar.edu.itba.pod.server.services;
 
 import ar.edu.itba.pod.server.Models.*;
 import ar.edu.itba.pod.server.Models.requests.QueryDayRequestModel;
@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 
 public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
 
-    private final static Logger logger = LoggerFactory.getLogger(AdminParkServer.class);
+    private final static Logger logger = LoggerFactory.getLogger(AdminParkService.class);
     private static final RideRepository repository = RideRepository.getInstance();
 
     @Override

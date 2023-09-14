@@ -1,4 +1,4 @@
-package ar.edu.itba.pod.server.server;
+package ar.edu.itba.pod.server.services;
 
 import ar.edu.itba.pod.server.Models.ParkPass;
 import ar.edu.itba.pod.server.Models.Ride;
@@ -15,11 +15,10 @@ import rideBooking.AdminParkServiceGrpc;
 import rideBooking.AdminParkServiceOuterClass.*;
 
 import java.util.Optional;
-import java.util.UUID;
 
 
-public class AdminParkServer extends AdminParkServiceGrpc.AdminParkServiceImplBase{
-    private final static Logger logger = LoggerFactory.getLogger(AdminParkServer.class);
+public class AdminParkService extends AdminParkServiceGrpc.AdminParkServiceImplBase{
+    private final static Logger logger = LoggerFactory.getLogger(AdminParkService.class);
     private static final RideRepository repository = RideRepository.getInstance();
 
     @Override
