@@ -46,11 +46,12 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
                 String rideName = ride.getName();
                 //TODO: Que pasa si es null?
                 ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> reservationsForQueryDay = repository.getReservationsByDay(rideName, day);
-                int pendingBookings = 0;
+                int pendingBookings;
 
                 if(reservationsForQueryDay != null) {
                     for (Map.Entry<String, ConcurrentSkipListSet<Reservation>> entry : reservationsForQueryDay.entrySet()) {
                         ParkLocalTime slot = ParkLocalTime.fromString(entry.getKey());
+                        pendingBookings = 0;
                         for (Reservation reservation : entry.getValue()) {
                             if (reservation.getState() == ReservationState.PENDING) {
                                 pendingBookings++;
@@ -61,8 +62,7 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
                 }
             }
         });
-        responseList.sort(Comparator.comparingInt(CapacitySuggestion::getSuggestedCapacity).reversed()
-                .thenComparing(CapacitySuggestion::getRideName));
+        responseList.sort(Comparator.comparingInt(CapacitySuggestion::getSuggestedCapacity).reversed());
 
         return responseList;
     }
@@ -106,8 +106,7 @@ public class QueryService extends QueryServiceGrpc.QueryServiceImplBase{
             }
         });
 
-        //TODO: Revisar orden
-        confirmedBookings.sort(Comparator.comparing(ConfirmedBookings::getSlot).thenComparing(ConfirmedBookings::getRideName));
+        confirmedBookings.sort(Comparator.comparing(ConfirmedBookings::getSlot).reversed());
 
         return confirmedBookings;
     }
