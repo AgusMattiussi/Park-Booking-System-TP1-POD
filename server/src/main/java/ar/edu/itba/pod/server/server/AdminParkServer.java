@@ -3,7 +3,9 @@ package ar.edu.itba.pod.server.server;
 import ar.edu.itba.pod.server.Models.ParkPass;
 import ar.edu.itba.pod.server.Models.Ride;
 import ar.edu.itba.pod.server.Models.RideTime;
+import ar.edu.itba.pod.server.Models.requests.AddPassRequestModel;
 import ar.edu.itba.pod.server.Models.requests.AddRideRequestModel;
+import ar.edu.itba.pod.server.Models.requests.AddSlotCapacityRequestModel;
 import ar.edu.itba.pod.server.ridePersistance.RideRepository;
 import com.google.protobuf.BoolValue;
 import io.grpc.stub.StreamObserver;
@@ -24,7 +26,6 @@ public class AdminParkServer extends AdminParkServiceGrpc.AdminParkServiceImplBa
     public void addRide(AddRideRequest request, StreamObserver<BoolValue> responseObserver) {
         AddRideRequestModel requestModel = AddRideRequestModel.fromAddRideRequest(request);
 
-
         Optional<Ride> newRide = repository.addRide(requestModel.getRideName(),
                 new RideTime(requestModel.getStartTime(), requestModel.getEndTime(), requestModel.getSlotMinutes()),
                 requestModel.getSlotMinutes());
@@ -44,7 +45,11 @@ public class AdminParkServer extends AdminParkServiceGrpc.AdminParkServiceImplBa
 
     @Override
     public void addPassToPark(AddPassRequest request, StreamObserver<BoolValue> responseObserver) {
-        Optional<ParkPass> newPassToPark = repository.addParkPass(UUID.fromString(request.getVisitorId()), request.getPassType(), request.getValidDay());
+        AddPassRequestModel requestModel = AddPassRequestModel.fromAddPassRequest(request);
+
+        Optional<ParkPass> newPassToPark = repository.addParkPass(requestModel.getVisitorId(), requestModel.getPassType(),
+                requestModel.getDay());
+
         newPassToPark.ifPresentOrElse(
                 parkPass -> {
                     responseObserver.onNext(BoolValue.of(true));
@@ -53,15 +58,17 @@ public class AdminParkServer extends AdminParkServiceGrpc.AdminParkServiceImplBa
                 () -> {
                     responseObserver.onNext(BoolValue.of(false));
                     responseObserver.onCompleted();
-                    final String msg = "Could not create Pass for visitor " + request.getVisitorId() + " for the day " + request.getValidDay();
-                    logger.error(msg);
+                    logger.error(String.format("Could not create Pass for visitor %s for the day %d",requestModel.getVisitorId(), requestModel.getDay()));
                 }
         );
     }
 
     @Override
     public void addSlotCapacity(AddSlotCapacityRequest request, StreamObserver<SlotCapacityResponse> responseObserver) {
-        SlotCapacityResponse reservations_amount = repository.addSlotsPerDay(request.getRideName(), request.getValidDay(), request.getSlotCapacity());
+        AddSlotCapacityRequestModel requestModel = AddSlotCapacityRequestModel.fromAddSlotCapacityRequest(request);
+
+        SlotCapacityResponse reservations_amount = repository.addSlotsPerDay(requestModel.getRideName(),
+                requestModel.getDay(), requestModel.getSlotCapacity());
         responseObserver.onNext(reservations_amount);
         responseObserver.onCompleted();
     }

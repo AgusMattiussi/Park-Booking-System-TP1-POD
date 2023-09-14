@@ -73,4 +73,8 @@ public class ParkPassRepository {
     public boolean hasValidPass(UUID visitorId, int day) {
         return this.parkPasses.containsKey(visitorId) && this.parkPasses.get(visitorId).containsKey(day);
     }
+
+    public ConcurrentMap<UUID, ConcurrentMap<Integer, ParkPass>> getParkPasses() {
+        return parkPasses;
+    }
 }
