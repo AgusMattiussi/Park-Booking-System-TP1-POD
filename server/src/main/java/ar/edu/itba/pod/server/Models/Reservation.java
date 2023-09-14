@@ -12,6 +12,7 @@ import rideBooking.NotifyServiceOuterClass;
 
 public class Reservation implements Comparable<Reservation> {
     private final String rideName;
+
     private final UUID visitorId;
     //TODO: Esto requiere lock si o si
     private ReservationState state;
@@ -156,11 +157,27 @@ public class Reservation implements Comparable<Reservation> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Reservation that = (Reservation) o;
-        return day == that.day && visitorId.equals(that.visitorId) && time.equals(that.time);
+        return rideName.equals(that.rideName) && day == that.day && visitorId.equals(that.visitorId) && time.equals(that.time);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(visitorId, day, time);
     }
+
+    //TODO: Borrar
+    @Override
+    public String toString() {
+        return "Reservation{" +
+                "rideName='" + rideName + '\'' +
+                ", visitorId=" + visitorId +
+                ", state=" + state +
+                ", day=" + day +
+                ", time=" + time +
+                ", shouldNotify=" + shouldNotify +
+                ", notificationObserver=" + notificationObserver +
+                ", shouldNotifyLock=" + shouldNotifyLock +
+                '}';
+    }
+
 }

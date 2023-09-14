@@ -9,14 +9,11 @@ import com.google.protobuf.StringValue;
 import io.grpc.ManagedChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rideBooking.AdminParkServiceGrpc;
 import rideBooking.RideBookingServiceGrpc;
 import rideBooking.RideBookingServiceOuterClass;
 
 import java.security.InvalidParameterException;
-import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
@@ -25,7 +22,7 @@ public class BookingClient {
 
         /*
             $> ./book-cli -DserverAddress=xx.xx.xx.xx:yyyy -Daction=actionName
-            [ -Dday=dayOfYear -Dride=rideName -Dvisitor=visitorId -Dslot=bookingSlot
+            [ -Dday=dayOfYear -Dattraction=rideName -Dvisitor=visitorId -Dslot=bookingSlot
             -DslotTo=bookingSlotTo ]
          */
 
@@ -42,7 +39,6 @@ public class BookingClient {
         //TODO: Validar parametros no null
         final String serverAddress = argMap.get(ClientUtils.SERVER_ADDRESS);
         final String action = argMap.get(ClientUtils.ACTION_NAME);;
-        final String outPath = argMap.get(ClientUtils.OUTPATH);
 
         if(serverAddress == null) {
             logger.error("Server address not specified");
@@ -50,10 +46,6 @@ public class BookingClient {
         }
         if(action == null) {
             logger.error("Action nos specified");
-            System.exit(1);
-        }
-        if(outPath == null) {
-            logger.error("Output Path not specified");
             System.exit(1);
         }
 
@@ -88,31 +80,38 @@ public class BookingClient {
 
             }
             case "availability" -> {
-                final String rideName = argMap.get(ClientUtils.RIDE_NAME);
+                final String rideName = argMap.get(ClientUtils.ATTRACTION);
                 final String day = argMap.get(ClientUtils.DAY);
                 final String bookingSlot = argMap.get(ClientUtils.BOOKING_SLOT);
                 final String bookingSlotTo = argMap.get(ClientUtils.BOOKING_SLOT_TO);
 
-                ListenableFuture<RideBookingServiceOuterClass.GetRideAvailabilityResponse> result = stub.getRideAvailability(
-                                RideBookingServiceOuterClass.GetRideAvailabilityRequest.newBuilder()
-                                .setDayOfYear(StringValue.of(day))
-                                //.setRideName(rideName)
-                                .setStartTimeSlot(StringValue.of(bookingSlot))
-                                .setEndTimeSlot(StringValue.of(bookingSlotTo))
-                                .build());
+                RideBookingServiceOuterClass.GetRideAvailabilityRequest.Builder builder = RideBookingServiceOuterClass.GetRideAvailabilityRequest.newBuilder()
+                        .setDayOfYear(StringValue.of(day))
+                        .setStartTimeSlot(StringValue.of(bookingSlot));
+
+                if(bookingSlotTo != null) {
+                    builder.setEndTimeSlot(StringValue.of(bookingSlotTo));
+                }
+                if(rideName != null)
+                    builder.setRideName(StringValue.of(rideName));
+
+                ListenableFuture<RideBookingServiceOuterClass.GetRideAvailabilityResponse> result = stub.getRideAvailability(builder.build());
 
                 Futures.addCallback(result, new FutureCallback<>() {
                     @Override
                     public void onSuccess(RideBookingServiceOuterClass.GetRideAvailabilityResponse getRideAvailabilityResponse) {
                         //TODO: Embellecer
                         getRideAvailabilityResponse.getRideAvailabilityList().forEach(rideAvailability -> {
-                            System.out.printf("%s\n", rideAvailability.getRideName().getValue());
+                            String rideName = rideAvailability.getRideName().getValue();
                             rideAvailability.getTimeSlotAvailabilityList().forEach(timeSlotAvailability -> {
-                                System.out.printf("\t[%s]\tConfirmed: %d\tPending :%d\tTotal Capacity:%d\n",
+                                int capacityVal = timeSlotAvailability.getRideCapacity().getValue();
+                                System.out.printf("Slot\t|Capacity\t|Pending\t|Confirmed\t|Attraction\n%s\t|%d\t|%d\t|%d\t|%s",
                                         timeSlotAvailability.getTimeSlot().getValue(),
-                                        timeSlotAvailability.getConfirmedBookings().getValue(),
+                                        capacityVal == -1 ? 'X' : capacityVal,
                                         timeSlotAvailability.getPendingBookings().getValue(),
-                                        timeSlotAvailability.getRideCapacity().getValue());
+                                        timeSlotAvailability.getConfirmedBookings().getValue(),
+                                        rideName
+                                        );
                             });
                         });
 
@@ -127,7 +126,7 @@ public class BookingClient {
                 }, Runnable::run);
             }
             case "book" -> {
-                final String rideName = argMap.get(ClientUtils.RIDE_NAME);
+                final String rideName = argMap.get(ClientUtils.ATTRACTION);
                 final String day = argMap.get(ClientUtils.DAY);
                 final String bookingSlot = argMap.get(ClientUtils.BOOKING_SLOT);
                 final String visitorId = argMap.get(ClientUtils.VISITOR_ID);

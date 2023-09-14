@@ -18,9 +18,8 @@ import java.util.stream.Collectors;
 
 public class RideRepository {
 
-
     private static RideRepository instance;
-    private static ParkPassRepository parkPassInstance;
+    private static ParkPassRepository parkPassInstance = ParkPassRepository.getInstance();
     private final ConcurrentMap<String, Ride> rides;
 
 
@@ -31,7 +30,6 @@ public class RideRepository {
 
     private RideRepository() {
         this.rides = new ConcurrentHashMap<>();
-        this.parkPassInstance = ParkPassRepository.getInstance();
     }
 
     public static RideRepository getInstance() {
@@ -149,14 +147,6 @@ public class RideRepository {
             throw new PassNotFoundException(String.format("No valid pass for day %s", day));
 
 
-        Set<Reservation> bookedReservations = new HashSet<>();
-        for (Map.Entry<String, Ride> r: rides.entrySet()) {
-            List<Reservation> reservations = getUserReservationsByDay(r.getKey(), day, visitorId);
-            if (reservations!=null) {
-                bookedReservations.addAll(reservations);
-            }
-        }
-
         if(passType.equals(Models.PassTypeEnum.HALFDAY) && !parkPassInstance.checkHalfDayPass(timeSlot)) {
             throw new InvalidTimeException(String.format("No valid time for day %s, according to HALFDAY pass", day));
         }else if(!parkPassInstance.checkVisitorPass(visitorId, day)) {
@@ -181,16 +171,18 @@ public class RideRepository {
     }
 
 
-    //TODO: Que pasa si me consultan por reservas y empiezan a crear nuevas?
-
     public NavigableSet<Reservation> getReservationsByTimeSlot(String rideName, int day, ParkLocalTime timeSlot){
         ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> reservationsByTime = getReservationsByDay(rideName, day);
         if(reservationsByTime != null)
             return reservationsByTime.get(timeSlot.toString());
         return null;
     }
+
     public ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> getReservationsByDay(String rideName, int day){
         Ride ride = rides.get(rideName);
+        if(ride == null)
+            System.out.println("No encontre la ride " + rideName);
+
         ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> rideReservations = ride.getBookedSlots();
         if(rideReservations == null)
             return null;
@@ -371,11 +363,18 @@ public class RideRepository {
             throw new IllegalArgumentException("Start time slot must be before end time slot");
 
         Map<ParkLocalTime, RideAvailability> timeSlotAvailability = new HashMap<>();
-        List<ParkLocalTime> timeSlots = ride.getTimeSlotsBetween(startTimeSlot, endTimeSlot);
+        List<ParkLocalTime> timeSlots;
+        if(!endTimeSlot.equals(startTimeSlot))
+            timeSlots = ride.getTimeSlotsBetween(startTimeSlot, endTimeSlot);
+        else {
+            timeSlots = new ArrayList<>(Collections.singletonList(startTimeSlot));
+        }
+        System.out.println(timeSlots);
 
-        for (ParkLocalTime currentTimeSlot : timeSlots)
+        for (ParkLocalTime currentTimeSlot : timeSlots) {
+            System.out.println(currentTimeSlot);
             timeSlotAvailability.put(currentTimeSlot, getRideAvailabilityForTimeSlot(rideName, currentTimeSlot, day));
-
+        }
         return timeSlotAvailability;
     }
 
