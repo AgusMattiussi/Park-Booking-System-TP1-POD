@@ -1,6 +1,8 @@
 package ar.edu.itba.pod.client;
 
 import ar.edu.itba.pod.client.utils.ClientUtils;
+import ar.edu.itba.pod.client.utils.callbacks.BookRideResponseFutureCallback;
+import ar.edu.itba.pod.client.utils.callbacks.GetRideAvailabilityResponseFutureCallback;
 import ar.edu.itba.pod.client.utils.callbacks.GetRideResponseFutureCallback;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -52,7 +54,6 @@ public class BookingClient {
             case "attractions" -> {
                 ListenableFuture<RideBookingServiceOuterClass.GetRideResponse> result =  stub.getRides(Empty.newBuilder().build());
                 Futures.addCallback(result, new GetRideResponseFutureCallback(logger, latch), Runnable::run);
-
             }
             case "availability" -> {
                 final String rideName = argMap.get(ClientUtils.ATTRACTION);
@@ -71,33 +72,7 @@ public class BookingClient {
                     builder.setRideName(StringValue.of(rideName));
 
                 ListenableFuture<RideBookingServiceOuterClass.GetRideAvailabilityResponse> result = stub.getRideAvailability(builder.build());
-
-                Futures.addCallback(result, new FutureCallback<>() {
-                    @Override
-                    public void onSuccess(RideBookingServiceOuterClass.GetRideAvailabilityResponse getRideAvailabilityResponse) {
-
-                        System.out.printf("%8s | %-8s | %-7s | %-9s | %-20s |%n", "Slot", "Capacity", "Pending", "Confirmed", "Attraction");
-
-                        getRideAvailabilityResponse.getRideAvailabilityList().forEach(rideAvailability -> {
-                            String rideName = rideAvailability.getRideName().getValue();
-                            rideAvailability.getTimeSlotAvailabilityList().forEach(timeSlotAvailability -> {
-                                printRideAvailability(timeSlotAvailability.getTimeSlot().getValue(),
-                                        timeSlotAvailability.getRideCapacity().getValue(),
-                                        timeSlotAvailability.getPendingBookings().getValue(),
-                                        timeSlotAvailability.getConfirmedBookings().getValue(),
-                                        rideName);
-                            });
-                        });
-
-                        latch.countDown();
-                    }
-
-                    @Override
-                    public void onFailure(Throwable throwable) {
-                        latch.countDown();
-                        logger.error(throwable.getMessage());
-                    }
-                }, Runnable::run);
+                Futures.addCallback(result, new GetRideAvailabilityResponseFutureCallback(logger, latch), Runnable::run);
             }
             case "book" -> {
                 final String rideName = argMap.get(ClientUtils.ATTRACTION);
@@ -113,20 +88,8 @@ public class BookingClient {
                                 .setVisitorId(StringValue.of(visitorId))
                                 .build());
 
-                Futures.addCallback(result, new FutureCallback<>() {
-                    @Override
-                    public void onSuccess(RideBookingServiceOuterClass.BookRideResponse bookRideResponse) {
-                        System.out.printf("The reservation for %s at %s on the day %s is %s\n",
-                                rideName, bookingSlot, day, bookRideResponse.getStatus());
-                        latch.countDown();
-                    }
-
-                    @Override
-                    public void onFailure(Throwable throwable) {
-                        latch.countDown();
-                        logger.error(throwable.getMessage());
-                    }
-                }, Runnable::run);
+                Futures.addCallback(result, new BookRideResponseFutureCallback(logger, latch, rideName, bookingSlot, day),
+                        Runnable::run);
             }
             case "confirm" -> {
                 final String rideName = argMap.get(ClientUtils.RIDE_NAME);
@@ -143,19 +106,8 @@ public class BookingClient {
                                 .setVisitorId(StringValue.of(visitorId))
                                 .build());
 
-                Futures.addCallback(result, new FutureCallback<>() {
-                    @Override
-                    public void onSuccess(RideBookingServiceOuterClass.BookRideResponse bookRideResponse) {
-                        System.out.printf("The reservation for %s at %s on the day %s is %s\n",
-                                rideName, bookingSlot, day, bookRideResponse.getStatus());
-                    }
-
-                    @Override
-                    public void onFailure(Throwable throwable) {
-                        latch.countDown();
-                        logger.error(throwable.getMessage());
-                    }
-                }, Runnable::run);
+                Futures.addCallback(result, new BookRideResponseFutureCallback(logger, latch, rideName, bookingSlot, day),
+                        Runnable::run);
             }
             case "cancel" -> {
                 final String rideName = argMap.get(ClientUtils.RIDE_NAME);
@@ -172,19 +124,8 @@ public class BookingClient {
                                 .setVisitorId(StringValue.of(visitorId))
                                 .build());
 
-                Futures.addCallback(result, new FutureCallback<>() {
-                    @Override
-                    public void onSuccess(RideBookingServiceOuterClass.BookRideResponse bookRideResponse) {
-                        System.out.printf("The reservation for %s at %s on the day %s is %s\n",
-                                rideName, bookingSlot, day, bookRideResponse.getStatus());
-                    }
-
-                    @Override
-                    public void onFailure(Throwable throwable) {
-                        latch.countDown();
-                        logger.error(throwable.getMessage());
-                    }
-                }, Runnable::run);
+                Futures.addCallback(result, new BookRideResponseFutureCallback(logger, latch, rideName, bookingSlot, day),
+                        Runnable::run);
             }
             default -> throw new InvalidParameterException(String.format("Action '%s' not supported", action));
         }
@@ -198,8 +139,5 @@ public class BookingClient {
         }
     }
 
-    private static void printRideAvailability(String slot, int capacity, int pending, int confirmed, String rideName){
-        System.out.printf("%8s | %8s | %7s | %9s | %-20s |%n",
-                slot, capacity != -1 ? capacity:"X" , pending, confirmed, rideName);
-    }
+
 }
