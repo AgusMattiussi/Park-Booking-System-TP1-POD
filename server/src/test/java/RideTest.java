@@ -75,9 +75,4 @@ public class RideTest {
     public void testisTimeSlotValid() {
         assertTrue(ride.isTimeSlotValid(new ParkLocalTime(LocalTime.of(10, 0))));
     }
-
-    @Test
-    public void testGetTimeSlotsBetween(){
-//        assertEquals(2, ride.getTimeSlotsBetween(new ParkLocalTime(LocalTime.of(9, 0)), new ParkLocalTime(LocalTime.of(10, 0))).size());
-    }
 }
