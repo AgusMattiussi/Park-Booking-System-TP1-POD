@@ -53,10 +53,8 @@ public class BookingClient {
                 final String bookingSlot = argMap.get(ClientUtils.BOOKING_SLOT);
                 final String bookingSlotTo = argMap.get(ClientUtils.BOOKING_SLOT_TO);
 
-                validateNullArgument(rideName, "Attraction name not specified");
                 validateNullArgument(day, "Day not specified");
                 validateNullArgument(bookingSlot, "Booking slot not specified");
-                validateNullArgument(bookingSlot, "Booking slot to not specified");
 
                 RideBookingServiceOuterClass.GetRideAvailabilityRequest.Builder builder = RideBookingServiceOuterClass.GetRideAvailabilityRequest.newBuilder()
                         .setDayOfYear(StringValue.of(day))
