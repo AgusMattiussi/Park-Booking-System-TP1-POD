@@ -4,16 +4,16 @@
   <parent>
     <artifactId>tpe1-g6-parent</artifactId>
     <groupId>ar.edu.itba.pod.grpc</groupId>
-    <version>2023.1Q</version>
+    <version>2023.2Q</version>
   </parent>
   <artifactId>tpe1-g6-client</artifactId>
-  <version>2023.1Q</version>
+  <version>2023.2Q</version>
   <name>tpe1-g6-client</name>
   <dependencies>
     <dependency>
       <groupId>ar.edu.itba.pod.grpc</groupId>
       <artifactId>tpe1-g6-api</artifactId>
-      <version>2023.1Q</version>
+      <version>2023.2Q</version>
     </dependency>
     <dependency>
       <groupId>com.opencsv</groupId>
