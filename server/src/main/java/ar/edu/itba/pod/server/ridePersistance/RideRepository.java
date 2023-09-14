@@ -235,12 +235,23 @@ public class RideRepository {
             throw new InvalidTimeException(String.format("Time slot '%s' is invalid for ride '%s'", timeSlot, ride.getName()));
     }*/
 
-    private void validateRideTimeAndAccess(Ride ride, int day, ParkLocalTime timeSlot, UUID visitorId){
+    private void validateRideTimeAndAccess(Ride ride, int day, ParkLocalTime timeSlot, UUID visitorId, Models.PassTypeEnum passType){
         if(!ride.isTimeSlotValid(timeSlot))
             throw new InvalidTimeException(String.format("Time slot '%s' is invalid for ride '%s'", timeSlot, ride.getName()));
 
         if(!parkPassInstance.hasValidPass(visitorId, day))
             throw new PassNotFoundException(String.format("No valid pass for day %s", day));
+
+
+        ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> booked = ride.getBookedSlots().getOrDefault(day, new ConcurrentHashMap<>());
+        Set<Reservation> bookedReservations = booked.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
+
+
+        if(passType.equals(Models.PassTypeEnum.HALFDAY) && !parkPassInstance.checkHalfDayPass(timeSlot)) {
+            throw new InvalidTimeException(String.format("No valid time for day %s, according to HALFDAY pass", day));
+        }else if(!parkPassInstance.checkVisitorPass(visitorId, day, bookedReservations)) {
+            throw new InvalidPassTypeException(String.format("No reservation for day %s, according to THREE pass, yo already have 3 reservations", day));
+        }
     }
 
     public Map<String, Ride> getRides() {
@@ -302,7 +313,8 @@ public class RideRepository {
         if(ride == null)
             throw new RideNotFoundException(String.format("Ride '%s' does not exist", rideName));
 
-        validateRideTimeAndAccess(ride, day, timeSlot, visitorId);
+        Models.PassTypeEnum passType = parkPassInstance.getVisitorParkType(visitorId, day);
+        validateRideTimeAndAccess(ride, day, timeSlot, visitorId, passType);
 
         boolean isCapacitySet = ride.isSlotCapacitySet(day);
 
@@ -374,7 +386,8 @@ public class RideRepository {
      */
     public void confirmBooking(String rideName, int day, ParkLocalTime timeSlot, UUID visitorId){
         Ride ride = getRide(rideName);
-        validateRideTimeAndAccess(ride, day, timeSlot, visitorId);
+        Models.PassTypeEnum passType = parkPassInstance.getVisitorParkType(visitorId, day);
+        validateRideTimeAndAccess(ride, day, timeSlot, visitorId, passType);
 
         if(!ride.isSlotCapacitySet(day))
             throw new SlotCapacityException(String.format("Slot capacity not set for ride '%s'", rideName));
@@ -404,7 +417,8 @@ public class RideRepository {
     //TODO: Deberia llamar a ride.incrementCapacity()?
     public void cancelBooking(String rideName, int day, ParkLocalTime timeSlot, UUID visitorId) {
         Ride ride = getRide(rideName);
-        validateRideTimeAndAccess(ride, day, timeSlot, visitorId);
+        Models.PassTypeEnum passType = parkPassInstance.getVisitorParkType(visitorId, day);
+        validateRideTimeAndAccess(ride, day, timeSlot, visitorId, passType);
 
         Reservation toRemove = new Reservation(rideName, visitorId, ReservationState.UNKNOWN_STATE, day, timeSlot);
 
@@ -422,8 +436,13 @@ public class RideRepository {
 
         validateDay(day);
 
-        if(!parkPassInstance.hasValidPass(visitorId, day))
-            throw new PassNotFoundException("No valid pass for day " + day);
+        Ride ride = rides.get(rideName);
+
+        ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> booked = ride.getBookedSlots().get(day);
+        Set<Reservation> bookedReservations = booked.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
+
+        if(!parkPassInstance.checkVisitorPass(visitorId, day, bookedReservations))
+            throw new InvalidPassTypeException(String.format("No reservation for day %s, according to THREE pass, yo already have 3 reservations", day));
 
 
         List<Reservation> reservations = getUserReservationsByDay(rideName, day, visitorId);

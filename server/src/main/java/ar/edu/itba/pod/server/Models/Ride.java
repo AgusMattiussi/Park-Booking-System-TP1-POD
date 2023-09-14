@@ -14,10 +14,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 //TODO: Cambiar las colecciones a su version concurrente
 //TODO: Cambiar a Atomics
@@ -151,6 +149,9 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
                 ParkLocalTime parkLocalTime =  ParkLocalTime.fromString(timeSlot);
                 ConcurrentSkipListSet<Reservation> reservations = bookedSlots.get(day).get(timeSlot);
 
+                ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> booked = bookedSlots.get(day);
+                Set<Reservation> bookedReservations = booked.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
+
                 // Si tengo para realocar lo hago
                 if(realocateReservations.containsKey(timeSlot)){
                     reservations.addAll(realocateReservations.get(timeSlot));
@@ -165,7 +166,7 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
                     UUID visitorId = r.getVisitorId();
                     Models.PassTypeEnum passType = parkPassInstance.getVisitorParkType(visitorId, day);
 
-                    if (parkPassInstance.checkVisitorPass(passType, visitorId, reservations, parkLocalTime)) {
+                    if (checkVisitorPass(parkPassInstance, passType, visitorId, (ConcurrentSkipListSet<Reservation>) bookedReservations, parkLocalTime, day)) {
                         if (getSlotsLeft(day, parkLocalTime).get() > 0) { // Si tengo lugar para guardar, guardo
                             if (r.getState() == ReservationState.RELOCATED) {
                                 relocatedAmount += 1;
@@ -180,7 +181,7 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
                             for(String after :timeSlots.subList(i + 1, timeSlots.size())){
                                 ParkLocalTime afterTime =  ParkLocalTime.fromString(after);
                                 ConcurrentSkipListSet<Reservation> afterReservations = bookedSlots.get(day).get(after);
-                                if(!parkPassInstance.checkVisitorPass(passType, visitorId, afterReservations, afterTime)) {
+                                if(passType.equals(Models.PassTypeEnum.HALFDAY) && !parkPassInstance.checkHalfDayPass(afterTime)) {
                                     // Chequeo el pase, y sino puedo salgo
                                     break;
                                 }
@@ -220,6 +221,10 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
         return AdminParkServiceOuterClass.SlotCapacityResponse.newBuilder()
                 .setAcceptedAmount(acceptedAmount).setCancelledAmount(cancelledAmount).setRelocatedAmount(relocatedAmount)
                 .build();
+    }
+
+    private boolean checkVisitorPass(ParkPassRepository parkPassInstance, Models.PassTypeEnum passType, UUID visitorId, ConcurrentSkipListSet<Reservation> reservations, ParkLocalTime parkLocalTime, int day) {
+        return passType.equals(Models.PassTypeEnum.HALFDAY) ? parkPassInstance.checkHalfDayPass(parkLocalTime) : parkPassInstance.checkVisitorPass(visitorId, day, reservations);
     }
 
 

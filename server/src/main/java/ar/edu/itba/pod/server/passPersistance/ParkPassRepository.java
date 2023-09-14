@@ -38,8 +38,8 @@ public class ParkPassRepository {
 
 
     //    Si el pase es halfDay y quiero reservas desp de las 14hs
-    private boolean checkHalfDayPass(ParkLocalTime reservationTime){
-        return !reservationTime.isAfter(HALF_DAY_TIME);
+    public boolean checkHalfDayPass(ParkLocalTime reservationTime){
+        return reservationTime.isBefore(HALF_DAY_TIME);
     }
 
     public Optional<ParkPass> addParkPass(UUID visitorId, Models.PassTypeEnum type, int day){
@@ -57,13 +57,11 @@ public class ParkPassRepository {
     //    True si puedo seguir reservando, false si no puedo
 //    Chequeo si es half day que la reserva sea antes de las 14hs
 //    y si es three que no tenga 3 o mas ya hechas
-    public boolean checkVisitorPass(Models.PassTypeEnum passType, UUID visitorId,  Set<Reservation> reservationSet,
-                                     ParkLocalTime reservationTime){
+    public boolean checkVisitorPass(UUID visitorId, int day,  Set<Reservation> reservationSet){
+        Models.PassTypeEnum passType = this.parkPasses.get(visitorId).get(day).getType();
         int passes = 0;
         if(passType == Models.PassTypeEnum.THREE){
             passes = (int) reservationSet.stream().filter(r -> r.getVisitorId() == visitorId).count();
-        }else if(passType == Models.PassTypeEnum.HALFDAY){
-            return checkHalfDayPass(reservationTime);
         }
         return passType == Models.PassTypeEnum.UNLIMITED || passes < 3;
     }
@@ -72,7 +70,6 @@ public class ParkPassRepository {
         return this.parkPasses.get(visitorId).get(day).getType();
     }
 
-    //FIXME: Chequear si anda
     public boolean hasValidPass(UUID visitorId, int day) {
         return this.parkPasses.containsKey(visitorId) && this.parkPasses.get(visitorId).containsKey(day);
     }
