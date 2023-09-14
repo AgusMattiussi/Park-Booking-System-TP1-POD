@@ -2,6 +2,7 @@ package ar.edu.itba.pod.server.Models;
 
 
 import ar.edu.itba.pod.server.exceptions.AlreadyExistsException;
+import ar.edu.itba.pod.server.exceptions.InvalidTimeException;
 import ar.edu.itba.pod.server.exceptions.ReservationLimitException;
 import ar.edu.itba.pod.server.exceptions.SlotCapacityException;
 import ar.edu.itba.pod.server.passPersistence.ParkPassRepository;
@@ -261,6 +262,9 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
     }
 
     public ReservationState bookRide(int day, ParkLocalTime timeSlot, UUID visitorId) {
+        if (timeSlot.until(rideTime.getClose()) < rideTime.getTimeSlotDuration().toMinutes()){
+            throw new InvalidTimeException(String.format("You can't make a reservation at %s because ride %s closes at %s", timeSlot, this.name, this.rideTime.getClose()));
+        }
         if(this.isSlotCapacitySet(day)) {
             if (this.getSlotsLeft(day, timeSlot).get() == 0)
                 throw new ReservationLimitException(String.format("No more reservations available for ride '%s' on day %s at %s", this.name, day, timeSlot));

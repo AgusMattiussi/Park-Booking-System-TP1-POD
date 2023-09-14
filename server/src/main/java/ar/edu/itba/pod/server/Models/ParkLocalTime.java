@@ -2,6 +2,7 @@ package ar.edu.itba.pod.server.Models;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalUnit;
 import java.util.Objects;
@@ -86,4 +87,7 @@ public class ParkLocalTime implements Comparable<ParkLocalTime> {
     }
 
 
+    public long until(ParkLocalTime close) {
+        return time.until(close.asLocalTime(), ChronoUnit.MINUTES);
+    }
 }
