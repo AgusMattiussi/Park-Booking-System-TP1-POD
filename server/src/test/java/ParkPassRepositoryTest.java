@@ -1,4 +1,4 @@
-import ar.edu.itba.pod.server.passPersistance.ParkPassRepository;
+import ar.edu.itba.pod.server.passPersistence.ParkPassRepository;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import rideBooking.Models;

@@ -1,6 +1,6 @@
 import ar.edu.itba.pod.server.Models.ParkLocalTime;
 import ar.edu.itba.pod.server.Models.RideTime;
-import ar.edu.itba.pod.server.ridePersistance.RideRepository;
+import ar.edu.itba.pod.server.ridePersistence.RideRepository;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

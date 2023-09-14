@@ -1,8 +1,8 @@
-package ar.edu.itba.pod.server.ridePersistance;
+package ar.edu.itba.pod.server.ridePersistence;
 
 import ar.edu.itba.pod.server.Models.*;
 import ar.edu.itba.pod.server.exceptions.*;
-import ar.edu.itba.pod.server.passPersistance.ParkPassRepository;
+import ar.edu.itba.pod.server.passPersistence.ParkPassRepository;
 import io.grpc.stub.StreamObserver;
 import rideBooking.AdminParkServiceOuterClass;
 import rideBooking.Models;

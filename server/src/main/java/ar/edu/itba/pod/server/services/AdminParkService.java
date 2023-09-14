@@ -6,7 +6,7 @@ import ar.edu.itba.pod.server.Models.RideTime;
 import ar.edu.itba.pod.server.Models.requests.AddPassRequestModel;
 import ar.edu.itba.pod.server.Models.requests.AddRideRequestModel;
 import ar.edu.itba.pod.server.Models.requests.AddSlotCapacityRequestModel;
-import ar.edu.itba.pod.server.ridePersistance.RideRepository;
+import ar.edu.itba.pod.server.ridePersistence.RideRepository;
 import com.google.protobuf.BoolValue;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;

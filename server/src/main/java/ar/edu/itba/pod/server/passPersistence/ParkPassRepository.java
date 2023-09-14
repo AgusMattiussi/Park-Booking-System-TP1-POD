@@ -1,11 +1,10 @@
-package ar.edu.itba.pod.server.passPersistance;
+package ar.edu.itba.pod.server.passPersistence;
 
 import ar.edu.itba.pod.server.Models.ParkLocalTime;
 import ar.edu.itba.pod.server.Models.ParkPass;
 import ar.edu.itba.pod.server.Models.Reservation;
-import ar.edu.itba.pod.server.Models.Ride;
 import ar.edu.itba.pod.server.exceptions.AlreadyExistsException;
-import ar.edu.itba.pod.server.ridePersistance.RideRepository;
+import ar.edu.itba.pod.server.ridePersistence.RideRepository;
 import rideBooking.Models;
 
 import java.util.*;

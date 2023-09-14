@@ -4,7 +4,7 @@ package ar.edu.itba.pod.server.Models;
 import ar.edu.itba.pod.server.exceptions.AlreadyExistsException;
 import ar.edu.itba.pod.server.exceptions.ReservationLimitException;
 import ar.edu.itba.pod.server.exceptions.SlotCapacityException;
-import ar.edu.itba.pod.server.passPersistance.ParkPassRepository;
+import ar.edu.itba.pod.server.passPersistence.ParkPassRepository;
 import com.google.protobuf.StringValue;
 import rideBooking.AdminParkServiceOuterClass;
 import rideBooking.Models;
@@ -17,7 +17,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 //TODO: Cambiar las colecciones a su version concurrente
 //TODO: Cambiar a Atomics
