@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>ar.edu.itba.pod.grpc</groupId>
   <artifactId>tpe1-g6-parent</artifactId>
-  <version>2023.1Q</version>
+  <version>2023.2Q</version>
   <packaging>pom</packaging>
   <name>tpe1-g6-parent</name>
   <modules>
