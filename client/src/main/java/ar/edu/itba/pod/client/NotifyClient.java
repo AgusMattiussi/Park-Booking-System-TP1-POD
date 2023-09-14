@@ -20,26 +20,23 @@ public class NotifyClient {
     private static final CountDownLatch latch = new CountDownLatch(1);
 
     public static void main(String[] args) throws InterruptedException {
-
+        logger.info("Notify Client Starting...");
         Map<String, String> argMap = ClientUtils.parseArguments(args);
 
-        //TODO: Validaciones
-        //TODO: Validar parametros no null
         final String serverAddress = argMap.get(ClientUtils.SERVER_ADDRESS);
-        final String action = argMap.get(ClientUtils.ACTION_NAME);;
-        final String outPath = argMap.get(ClientUtils.OUTPATH);
+        final String action = argMap.get(ClientUtils.ACTION_NAME);
+        final String rideName = argMap.get(ClientUtils.RIDE_NAME);
+        final String day = argMap.get(ClientUtils.DAY);
+        final String visitorID = argMap.get(ClientUtils.VISITOR_ID);
 
         ManagedChannel channel = ClientUtils.buildChannel(serverAddress);
+
         NotifyServiceGrpc.NotifyServiceFutureStub futureStub = NotifyServiceGrpc.newFutureStub(channel);
         NotifyServiceGrpc.NotifyServiceStub customStub = NotifyServiceGrpc.newStub(channel);
 
 
         switch (action) {
             case "follow" -> {
-
-                final String rideName = argMap.get(ClientUtils.RIDE_NAME);
-                final String day = argMap.get(ClientUtils.DAY);
-                final String visitorID = argMap.get(ClientUtils.VISITOR_ID);
 
                 NotifyServiceOuterClass.NotifyRequest request = NotifyServiceOuterClass.NotifyRequest.newBuilder()
                         .setRideName(rideName)
@@ -54,9 +51,6 @@ public class NotifyClient {
 
             }
             case "unfollow" -> {
-                final String rideName = argMap.get(ClientUtils.RIDE_NAME);
-                final String day = argMap.get(ClientUtils.DAY);
-                final String visitorID = argMap.get(ClientUtils.VISITOR_ID);
 
                 ListenableFuture<NotifyServiceOuterClass.NotificationResponse> result = futureStub.notifyRemoveVisitor(
                         NotifyServiceOuterClass.NotifyRequest.newBuilder()
@@ -68,7 +62,7 @@ public class NotifyClient {
                 Futures.addCallback(result, new FutureCallback<>() {
                     @Override
                     public void onSuccess(NotifyServiceOuterClass.NotificationResponse notificationResponse) {
-                        System.out.println(notificationResponse.getStatus());
+                        System.out.printf("Response Status: %s - Successfully unsubscribed from %s ride notifications\n", notificationResponse.getStatus(), rideName);
                         latch.countDown();
                     }
 
@@ -83,7 +77,7 @@ public class NotifyClient {
         }
 
         try {
-            logger.info("Waiting for response ...");
+            logger.info("Waiting for response...");
             latch.await(); // Espera hasta que la operación esté completa
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
