@@ -89,9 +89,7 @@ public class RideTime implements GRPCModel<Models.RideTime>{
         List<ParkLocalTime> timeSlots = new ArrayList<>();
         ParkLocalTime current = findFirstValidTimeSlotBetween(startTimeSlot, endTimeSlot);
 
-        System.out.println("First valid slot is: " + current);
         while(!current.plusMinutes(timeSlotDuration.toMinutes()).isAfter(endTimeSlot) && !current.plusMinutes(timeSlotDuration.toMinutes()).isAfter(close)){
-            System.out.println("Adding " + current);
             timeSlots.add(current);
             current = current.plusMinutes(timeSlotDuration.toMinutes());
         }
