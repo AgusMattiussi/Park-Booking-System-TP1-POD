@@ -69,7 +69,7 @@ public class ParkPassRepository {
         Models.PassTypeEnum passType = this.parkPasses.get(visitorId).get(day).getType();
         int passes = 0;
         if(passType == Models.PassTypeEnum.THREE){
-            passes = (int) reservationSet.stream().filter(r -> r.getVisitorId() == visitorId).count();
+            passes = (int) reservationSet.stream().filter(r -> r.getVisitorId().equals(visitorId)).count();
         }
         return passType == Models.PassTypeEnum.UNLIMITED || passes < 3;
     }
