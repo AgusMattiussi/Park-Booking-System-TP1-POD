@@ -1,5 +1,6 @@
 package ar.edu.itba.pod.server.Models;
 
+import ar.edu.itba.pod.server.Models.interfaces.GRPCModel;
 import rideBooking.Models;
 
 import java.time.Duration;
@@ -8,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 //TODO: Clase privada de Ride?
-public class RideTime implements GRPCModel<Models.RideTime>{
+public class RideTime implements GRPCModel<Models.RideTime> {
 
     private final ParkLocalTime open;
     private final ParkLocalTime  close;

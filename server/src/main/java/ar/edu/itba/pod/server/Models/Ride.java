@@ -1,6 +1,7 @@
 package ar.edu.itba.pod.server.Models;
 
 
+import ar.edu.itba.pod.server.Models.interfaces.GRPCModel;
 import ar.edu.itba.pod.server.exceptions.AlreadyExistsException;
 import ar.edu.itba.pod.server.exceptions.InvalidTimeException;
 import ar.edu.itba.pod.server.exceptions.ReservationLimitException;
@@ -23,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 //TODO: Cambiar las colecciones a su version concurrente
 //TODO: Cambiar a Atomics
-public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.Ride>{
+public class Ride implements GRPCModel<RideBookingServiceOuterClass.Ride> {
 
     private final String name;
     private final RideTime rideTime;

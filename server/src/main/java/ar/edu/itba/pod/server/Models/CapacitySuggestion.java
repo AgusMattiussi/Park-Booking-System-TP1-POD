@@ -1,5 +1,6 @@
 package ar.edu.itba.pod.server.Models;
 
+import ar.edu.itba.pod.server.Models.interfaces.GRPCModel;
 import rideBooking.QueryServiceOuterClass;
 
 public class CapacitySuggestion implements GRPCModel<QueryServiceOuterClass.CapacitySuggestion> {

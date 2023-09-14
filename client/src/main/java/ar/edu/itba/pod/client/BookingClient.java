@@ -1,6 +1,7 @@
 package ar.edu.itba.pod.client;
 
 import ar.edu.itba.pod.client.utils.ClientUtils;
+import ar.edu.itba.pod.client.utils.callbacks.GetRideResponseFutureCallback;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -19,12 +20,6 @@ import java.util.concurrent.ExecutionException;
 
 
 public class BookingClient {
-
-        /*
-            $> ./book-cli -DserverAddress=xx.xx.xx.xx:yyyy -Daction=actionName
-            [ -Dday=dayOfYear -Dattraction=rideName -Dvisitor=visitorId -Dslot=bookingSlot
-            -DslotTo=bookingSlotTo ]
-         */
 
     private static final Logger logger = LoggerFactory.getLogger(BookingClient.class);
     private static final CountDownLatch latch = new CountDownLatch(1);
@@ -55,28 +50,8 @@ public class BookingClient {
 
         switch (action) {
             case "attractions" -> {
-
                 ListenableFuture<RideBookingServiceOuterClass.GetRideResponse> result =  stub.getRides(Empty.newBuilder().build());
-                Futures.addCallback(result, new FutureCallback<>() {
-                    @Override
-                    public void onSuccess(RideBookingServiceOuterClass.GetRideResponse getRideResponse) {
-                        System.out.printf(" %-20s | %9s | %10s |%n", "Attraction", "Open Time", "Close Time");
-
-                        getRideResponse.getRidesList().forEach(ride -> System.out.printf(" %-20s | %9s | %10s |%n",
-                                ride.getName().getValue(),
-                                ride.getOpeningTime().getValue(),
-                                ride.getClosingTime().getValue()));
-
-                        latch.countDown();
-                    }
-
-                    @Override
-                    public void onFailure(Throwable throwable) {
-                        latch.countDown();
-                        logger.error(throwable.getMessage());
-                    }
-
-                }, Runnable::run);
+                Futures.addCallback(result, new GetRideResponseFutureCallback(logger, latch), Runnable::run);
 
             }
             case "availability" -> {
