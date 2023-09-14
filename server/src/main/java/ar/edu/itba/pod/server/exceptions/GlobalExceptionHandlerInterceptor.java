@@ -7,6 +7,8 @@ import jdk.jshell.spi.ExecutionControl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 
@@ -39,20 +41,19 @@ public class GlobalExceptionHandlerInterceptor implements ServerInterceptor {
             }
         }
 
-        private final Map<Class<? extends Throwable>, Code> errorCodesByException = Map.of(
-                ExecutionControl.NotImplementedException.class, Code.UNIMPLEMENTED,
-                AlreadyExistsException.class, Code.ALREADY_EXISTS,
-                RideNotFoundException.class, Code.NOT_FOUND,
-                SlotNotFoundException.class, Code.NOT_FOUND,
-                InvalidPassTypeException.class, Code.INVALID_ARGUMENT,
-                SlotCapacityException.class, Code.INVALID_ARGUMENT,
-                InvalidTimeException.class, Code.CANCELLED,
-                RuntimeException.class, Code.INTERNAL,
-                AlreadyConfirmedException.class, Code.ALREADY_EXISTS,
-                PassNotFoundException.class, Code.NOT_FOUND
-//                ,
-//                ReservationLimitException.class, Code.INVALID_ARGUMENT,
-//                ReservationNotFoundException.class, Code.NOT_FOUND
+        private static final Map<Class<? extends Throwable>, Code> errorCodesByException = Map.ofEntries(
+                Map.entry(ExecutionControl.NotImplementedException.class, Code.UNIMPLEMENTED),
+                Map.entry(AlreadyExistsException.class, Code.ALREADY_EXISTS),
+                Map.entry(RideNotFoundException.class, Code.NOT_FOUND),
+                Map.entry(SlotNotFoundException.class, Code.NOT_FOUND),
+                Map.entry(InvalidPassTypeException.class, Code.INVALID_ARGUMENT),
+                Map.entry(SlotCapacityException.class, Code.INVALID_ARGUMENT),
+                Map.entry(InvalidTimeException.class, Code.CANCELLED),
+                Map.entry(RuntimeException.class, Code.INTERNAL),
+                Map.entry(AlreadyConfirmedException.class, Code.ALREADY_EXISTS),
+                Map.entry(PassNotFoundException.class, Code.NOT_FOUND),
+                Map.entry(ReservationLimitException.class, Code.INVALID_ARGUMENT),
+                Map.entry(ReservationNotFoundException.class, Code.NOT_FOUND)
         );
 
 
