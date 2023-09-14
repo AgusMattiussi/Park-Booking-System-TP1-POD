@@ -166,7 +166,6 @@ public class RideRepository {
         return rideReservations.get(day);
     }
 
-    // TODO: Agregar locks para el caso donde dos hilos piensan que queda 1 slot y ambos lo reservan
     public ReservationState bookRide(String rideName, int day, ParkLocalTime timeSlot, UUID visitorId) {
         Ride ride = getRide(rideName);
         if(ride == null)
@@ -329,7 +328,7 @@ public class RideRepository {
     private int countStateForTimeSlot(String rideName, int day, ParkLocalTime timeSlot, ReservationState state) {
         NavigableSet<Reservation> reservations = getReservationsByTimeSlot(rideName, day, timeSlot);
         if(reservations == null)
-            return 0; // TODO: deberia tirar excepcion?
+            return 0;
 
         return (int) reservations.stream().filter(reservation -> reservation.getState() == state).count();
     }

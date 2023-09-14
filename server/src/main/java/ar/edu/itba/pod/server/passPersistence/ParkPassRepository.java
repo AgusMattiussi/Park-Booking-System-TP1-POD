@@ -4,6 +4,7 @@ import ar.edu.itba.pod.server.Models.ParkLocalTime;
 import ar.edu.itba.pod.server.Models.ParkPass;
 import ar.edu.itba.pod.server.Models.Reservation;
 import ar.edu.itba.pod.server.exceptions.AlreadyExistsException;
+import ar.edu.itba.pod.server.exceptions.InvalidPassTypeException;
 import ar.edu.itba.pod.server.ridePersistence.RideRepository;
 import rideBooking.Models;
 
@@ -65,7 +66,11 @@ public class ParkPassRepository {
     }
 
     public Models.PassTypeEnum getVisitorParkType(UUID visitorId, int day){
-        return this.parkPasses.get(visitorId).get(day).getType();
+        ParkPass parkPass = this.parkPasses.get(visitorId).get(day);
+        if(parkPass == null)
+            throw new InvalidPassTypeException(String.format("No valid pass for day %s", day));
+
+        return parkPass.getType();
     }
 
     public boolean hasValidPass(UUID visitorId, int day) {
