@@ -20,9 +20,8 @@ public class QueryClient {
     private static final Logger logger = LoggerFactory.getLogger(QueryClient.class);
     private static final CountDownLatch latch = new CountDownLatch(1);
 
-    //     ./query-cli -DserverAddress=10.6.0.1:50051 -Daction=capacity/confirmed -Dday=100 -DoutPath=query1.txt
     public static void main(String[] args) throws InterruptedException {
-        logger.info("Query Client Starting ...");
+        logger.info("Query Client Starting...");
 
         Map<String, String> argMap = parseArguments(args);
 
@@ -31,23 +30,24 @@ public class QueryClient {
         final String day = getArgumentValue(argMap, ClientUtils.DAY);
         final String outPath = getArgumentValue(argMap, ClientUtils.OUTPATH);
 
+        validateNullParams(serverAddress, action, day, outPath);
+
         ManagedChannel channel = buildChannel(serverAddress);
 
-        //TODO: blockingStub?
         QueryServiceGrpc.QueryServiceFutureStub stub = QueryServiceGrpc.newFutureStub(channel);
 
         switch(action){
             case "capacity" -> {
-                logger.info("Capacity Suggestion Query\n");
+                logger.info("Capacity Suggestion Query");
 
                 ListenableFuture<QueryServiceOuterClass.CapacitySuggestionResponse> result = stub.queryCapacitySuggestion(
-                        //TODO: Validar que no explote el parse
                         QueryServiceOuterClass.QueryDayRequest.newBuilder().setDayOfYear(day).build()
                 );
 
                 Futures.addCallback(result, new FutureCallback<>() {
                     @Override
                     public void onSuccess(QueryServiceOuterClass.CapacitySuggestionResponse capacitySuggestionResponse) {
+                        logger.info("Success");
                         List<QueryServiceOuterClass.CapacitySuggestion> list = capacitySuggestionResponse.getCapacitySuggestionsList();
                         generateCapacityQueryFileContent(list, outPath);
                         latch.countDown();
@@ -60,7 +60,7 @@ public class QueryClient {
                     }}, Runnable::run);
             }
             case "confirmed" -> {
-                logger.info("Confirmed Bookings Query\n");
+                logger.info("Confirmed Bookings Query");
 
                 ListenableFuture<QueryServiceOuterClass.ConfirmedBookingsResponse> result = stub.queryConfirmedBookings(
                         QueryServiceOuterClass.QueryDayRequest.newBuilder().setDayOfYear(day).build()
@@ -69,6 +69,7 @@ public class QueryClient {
                 Futures.addCallback(result, new FutureCallback<>() {
                     @Override
                     public void onSuccess(QueryServiceOuterClass.ConfirmedBookingsResponse confirmedBookingsResponse) {
+                        logger.info("Success");
                         List<QueryServiceOuterClass.ConfirmedBooking> list = confirmedBookingsResponse.getConfirmedBookingsList();
                         generateConfirmedQueryFileContent(list, outPath);
                         latch.countDown();
@@ -84,7 +85,7 @@ public class QueryClient {
         }
 
         try {
-            logger.info("Waiting for response ...");
+            logger.info("Waiting for response...");
             latch.await();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -111,5 +112,24 @@ public class QueryClient {
                     .append(confirmedBooking.getRideName()).append("\n");
         }
         createOutputFile(outPath, sb.toString());
+    }
+
+    private static void validateNullParams(String serverAddress, String action, String day, String outPath){
+        if(serverAddress == null) {
+            logger.error("Server address not specified");
+            System.exit(1);
+        }
+        if(action == null) {
+            logger.error("Action nos specified");
+            System.exit(1);
+        }
+        if(day == null) {
+            logger.error("Day not specified");
+            System.exit(1);
+        }
+        if(outPath == null) {
+            logger.error("Output path not specified");
+            System.exit(1);
+        }
     }
 }
