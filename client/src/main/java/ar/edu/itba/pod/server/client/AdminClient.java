@@ -47,13 +47,19 @@ public class AdminClient {
 
             try {
                 SlotCapacityResponse slotCapacityResponse = stub.addSlotCapacity(addSlotCapacityRequest);
-                String response = "Loaded capacity of " + capacity + " for " + rideName + " on day " + day +"\n"
-                        + slotCapacityResponse.getAcceptedAmount() + " bookings confirmed without changes\n"
-                        + slotCapacityResponse.getRelocatedAmount() + " bookings relocated\n"
-                        + slotCapacityResponse.getCancelledAmount() + " bookings cancelled\n";
+                String response = String.format("""
+                                Loaded capacity of %s for %s on day %s
+                                %s bookings confirmed without changes
+                                %s bookings relocated
+                                %s bookings cancelled
+                                """,
+                        capacity, rideName, day,
+                        slotCapacityResponse.getAcceptedAmount(),
+                        slotCapacityResponse.getRelocatedAmount(),
+                        slotCapacityResponse.getCancelledAmount());
                 System.out.println(response);
             } catch (Exception e) {
-                System.out.println("Cannot add slot capacity for ride called " + rideName + '.');
+                System.out.printf("Cannot add slot capacity for ride called %s on day %s.%n", rideName, day);
                 System.out.println(e.getMessage());
             }
 
@@ -100,9 +106,9 @@ public class AdminClient {
             String s = Objects.equals(action, "rides") ? " attractions" : " passes";
 
             if(couldNotAdd>0){
-                System.out.println("Cannot add " + couldNotAdd + s +"\n");
+                System.out.printf("Cannot add %d %s\n", couldNotAdd, s);
             }
-            System.out.println(added + s +" added\n");
+            System.out.printf("%d %s added\n", added, s);
         }
     }
 
@@ -111,7 +117,7 @@ public class AdminClient {
         try {
             filereader = new FileReader(inPath);
         } catch (FileNotFoundException e) {
-            throw new RuntimeException("File:" + inPath + " wasn't found");
+            throw new RuntimeException(String.format("File %s not found", inPath));
         }
 
         CSVParser parser = new CSVParserBuilder()
@@ -124,7 +130,7 @@ public class AdminClient {
                 .build()) {
             return csvReader.readAll();
         } catch (IOException e) {
-            throw new RuntimeException("There was an error reading the file " + inPath);
+            throw new RuntimeException(String.format("There was an error reading the file %s", inPath));
         }
     }
 

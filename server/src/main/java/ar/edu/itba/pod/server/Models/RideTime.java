@@ -14,6 +14,7 @@ public class RideTime implements GRPCModel<Models.RideTime>{
     private final ParkLocalTime  close;
     private final Duration timeSlotDuration;
 
+    //TODO: Eliminar si no se usa
     public RideTime(ParkLocalTime open, ParkLocalTime close, Duration timeSlotDuration){
         this.open = open;
         this.close = close;

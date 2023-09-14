@@ -76,16 +76,14 @@ public class NotifyClient {
                 Futures.addCallback(result, new FutureCallback<>() {
                     @Override
                     public void onSuccess(NotifyServiceOuterClass.NotificationResponse notificationResponse) {
-                        System.out.println("Success!\n");
                         System.out.println(notificationResponse.getStatus());
                         latch.countDown();
                     }
 
                     @Override
                     public void onFailure(Throwable throwable) {
-                        System.out.println("Error\n");
                         latch.countDown();
-                        System.out.println(throwable.getMessage());
+                        logger.error(throwable.getMessage());
                     }
                 }, Runnable::run);
             }
@@ -93,7 +91,7 @@ public class NotifyClient {
         }
 
         try {
-            System.out.println("Waiting for response...");
+            logger.info("Waiting for response ...");
             latch.await(); // Espera hasta que la operación esté completa
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -105,20 +103,20 @@ public class NotifyClient {
 
         @Override
         public void onNext(NotifyServiceOuterClass.Notification notification) {
+            //TODO: logger?
             System.out.println(notification.getMessage());
         }
 
         @Override
         public void onError(Throwable throwable) {
-            System.out.println("Error\n");
-            System.out.println(throwable.getMessage());
             latch.countDown();
+            logger.error(throwable.getMessage());
         }
 
         @Override
         public void onCompleted() {
-            System.out.println("Completed\n");
             latch.countDown();
+            logger.info("Completed");
         }
     }
 }

@@ -16,6 +16,7 @@ import rideBooking.RideBookingServiceOuterClass;
 import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
@@ -43,13 +44,18 @@ public class BookingClient {
         final String action = argMap.get(ClientUtils.ACTION_NAME);;
         final String outPath = argMap.get(ClientUtils.OUTPATH);
 
-        System.out.println("Input parameters:");
-        argMap.forEach((key, value) -> {
-            if(value != null)
-                System.out.printf("%s: %s\n", key, value);
-        });
-        System.out.println();
-
+        if(serverAddress == null) {
+            logger.error("Server address not specified");
+            System.exit(1);
+        }
+        if(action == null) {
+            logger.error("Action nos specified");
+            System.exit(1);
+        }
+        if(outPath == null) {
+            logger.error("Output Path not specified");
+            System.exit(1);
+        }
 
         ManagedChannel channel = ClientUtils.buildChannel(serverAddress);
         RideBookingServiceGrpc.RideBookingServiceFutureStub stub = RideBookingServiceGrpc.newFutureStub(channel);
@@ -62,7 +68,6 @@ public class BookingClient {
                 Futures.addCallback(result, new FutureCallback<>() {
                     @Override
                     public void onSuccess(RideBookingServiceOuterClass.GetRideResponse getRideResponse) {
-                        System.out.println("Success!\n");
                         //TODO: Embellecer
                         System.out.printf("Rides: %d\n", getRideResponse.getRidesCount());
                         getRideResponse.getRidesList().forEach(ride -> System.out.printf("%s - From %s to %s\n",
@@ -75,9 +80,8 @@ public class BookingClient {
 
                     @Override
                     public void onFailure(Throwable throwable) {
-                        System.out.println("Error\n");
                         latch.countDown();
-                        System.out.println(throwable.getMessage());
+                        logger.error(throwable.getMessage());
                     }
 
                 }, Runnable::run);
@@ -100,7 +104,6 @@ public class BookingClient {
                 Futures.addCallback(result, new FutureCallback<>() {
                     @Override
                     public void onSuccess(RideBookingServiceOuterClass.GetRideAvailabilityResponse getRideAvailabilityResponse) {
-                        System.out.println("Success!\n");
                         //TODO: Embellecer
                         getRideAvailabilityResponse.getRideAvailabilityList().forEach(rideAvailability -> {
                             System.out.printf("%s\n", rideAvailability.getRideName().getValue());
@@ -118,9 +121,8 @@ public class BookingClient {
 
                     @Override
                     public void onFailure(Throwable throwable) {
-                        System.out.println("Error\n");
                         latch.countDown();
-                        System.out.println(throwable.getMessage());
+                        logger.error(throwable.getMessage());
                     }
                 }, Runnable::run);
             }
@@ -141,7 +143,6 @@ public class BookingClient {
                 Futures.addCallback(result, new FutureCallback<>() {
                     @Override
                     public void onSuccess(RideBookingServiceOuterClass.BookRideResponse bookRideResponse) {
-                        System.out.println("Success!\n");
                         System.out.printf("The reservation for %s at %s on the day %s is %s\n",
                                 rideName, bookingSlot, day, bookRideResponse.getStatus());
                         latch.countDown();
@@ -149,9 +150,8 @@ public class BookingClient {
 
                     @Override
                     public void onFailure(Throwable throwable) {
-                        System.out.println("Error\n");
                         latch.countDown();
-                        System.out.println(throwable.getMessage());
+                        logger.error(throwable.getMessage());
                     }
                 }, Runnable::run);
             }
@@ -173,16 +173,14 @@ public class BookingClient {
                 Futures.addCallback(result, new FutureCallback<>() {
                     @Override
                     public void onSuccess(RideBookingServiceOuterClass.BookRideResponse bookRideResponse) {
-                        System.out.println("Success!\n");
                         System.out.printf("The reservation for %s at %s on the day %s is %s\n",
                                 rideName, bookingSlot, day, bookRideResponse.getStatus());
                     }
 
                     @Override
                     public void onFailure(Throwable throwable) {
-                        System.out.println("Error\n");
                         latch.countDown();
-                        System.out.println(throwable.getMessage());
+                        logger.error(throwable.getMessage());
                     }
                 }, Runnable::run);
             }
@@ -204,16 +202,14 @@ public class BookingClient {
                 Futures.addCallback(result, new FutureCallback<>() {
                     @Override
                     public void onSuccess(RideBookingServiceOuterClass.BookRideResponse bookRideResponse) {
-                        System.out.println("Success!\n");
                         System.out.printf("The reservation for %s at %s on the day %s is %s\n",
                                 rideName, bookingSlot, day, bookRideResponse.getStatus());
                     }
 
                     @Override
                     public void onFailure(Throwable throwable) {
-                        System.out.println("Error\n");
                         latch.countDown();
-                        System.out.println(throwable.getMessage());
+                        logger.error(throwable.getMessage());
                     }
                 }, Runnable::run);
             }
@@ -221,10 +217,11 @@ public class BookingClient {
         }
 
         try {
-            System.out.println("Waiting for response...");
+            logger.info("Waiting for response ...");
             latch.await(); // Espera hasta que la operación esté completa
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            logger.error(e.getMessage());
         }
     }
 }

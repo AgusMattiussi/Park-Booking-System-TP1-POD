@@ -4,8 +4,6 @@ import ar.edu.itba.pod.server.client.utils.ClientUtils;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.protobuf.Int32Value;
-import com.google.protobuf.StringValue;
 import io.grpc.ManagedChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +42,7 @@ public class QueryClient {
 
                 ListenableFuture<QueryServiceOuterClass.CapacitySuggestionResponse> result = stub.queryCapacitySuggestion(
                         //TODO: Validar que no explote el parse
-                        QueryServiceOuterClass.QueryDayRequest.newBuilder().setDayOfYear(StringValue.of(day)).build()
+                        QueryServiceOuterClass.QueryDayRequest.newBuilder().setDayOfYear(day).build()
                 );
 
                 Futures.addCallback(result, new FutureCallback<>() {
@@ -57,16 +55,15 @@ public class QueryClient {
 
                     @Override
                     public void onFailure(Throwable throwable) {
-                        System.out.println("Error\n");
                         latch.countDown();
-                        System.err.println(throwable.getMessage());
+                        logger.error(throwable.getMessage());
                     }}, Runnable::run);
             }
             case "confirmed" -> {
                 logger.info("Confirmed Bookings Query\n");
 
                 ListenableFuture<QueryServiceOuterClass.ConfirmedBookingsResponse> result = stub.queryConfirmedBookings(
-                        QueryServiceOuterClass.QueryDayRequest.newBuilder().setDayOfYear(StringValue.of(day)).build()
+                        QueryServiceOuterClass.QueryDayRequest.newBuilder().setDayOfYear(day).build()
                 );
 
                 Futures.addCallback(result, new FutureCallback<>() {
@@ -79,16 +76,15 @@ public class QueryClient {
 
                     @Override
                     public void onFailure(Throwable throwable) {
-                        System.out.println("Error\n");
                         latch.countDown();
-                        System.err.println(throwable.getMessage());
+                        logger.error(throwable.getMessage());
                     }}, Runnable::run);
             }
             default -> logger.error("Invalid action");
         }
 
         try {
-            System.out.println("Waiting for response...");
+            logger.info("Waiting for response ...");
             latch.await();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -99,9 +95,9 @@ public class QueryClient {
         StringBuilder sb = new StringBuilder();
         sb.append("Slot\t| Capacity  | Ride\n");
         for(QueryServiceOuterClass.CapacitySuggestion capacitySuggestion : list){
-           sb.append(capacitySuggestion.getSlot().getValue()).append("\t| ")
-                   .append(capacitySuggestion.getSuggestedCapacity().getValue()).append("\t\t\t| ")
-                   .append(capacitySuggestion.getRideName().getValue()).append("\n");
+           sb.append(capacitySuggestion.getSlot()).append("\t| ")
+                   .append(capacitySuggestion.getSuggestedCapacity()).append("\t\t\t| ")
+                   .append(capacitySuggestion.getRideName()).append("\n");
         }
         createOutputFile(outPath, sb.toString());
     }
@@ -110,9 +106,9 @@ public class QueryClient {
         StringBuilder sb = new StringBuilder();
         sb.append("Slot\t| Visitor\t\t\t\t\t\t\t\t| Ride\n");
         for(QueryServiceOuterClass.ConfirmedBooking confirmedBooking : list){
-            sb.append(confirmedBooking.getSlot().getValue()).append("\t| ")
-                    .append(confirmedBooking.getVisitorId().getValue()).append("  | ")
-                    .append(confirmedBooking.getRideName().getValue()).append("\n");
+            sb.append(confirmedBooking.getSlot()).append("\t| ")
+                    .append(confirmedBooking.getVisitorId()).append("  | ")
+                    .append(confirmedBooking.getRideName()).append("\n");
         }
         createOutputFile(outPath, sb.toString());
     }
