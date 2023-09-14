@@ -2,6 +2,7 @@ package ar.edu.itba.pod.client;
 
 import ar.edu.itba.pod.client.utils.ClientUtils;
 import ar.edu.itba.pod.client.utils.callbacks.CapacitySuggestionResponseFutureCallback;
+import ar.edu.itba.pod.client.utils.callbacks.ConfirmedBookingsResponseFutureCallback;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -58,20 +59,8 @@ public class QueryClient {
                         QueryServiceOuterClass.QueryDayRequest.newBuilder().setDayOfYear(day).build()
                 );
 
-                Futures.addCallback(result, new FutureCallback<>() {
-                    @Override
-                    public void onSuccess(QueryServiceOuterClass.ConfirmedBookingsResponse confirmedBookingsResponse) {
-                        System.out.printf("Successfully generated output file %s\n", outPath);
-                        List<QueryServiceOuterClass.ConfirmedBooking> list = confirmedBookingsResponse.getConfirmedBookingsList();
-                        generateConfirmedQueryFileContent(list, outPath);
-                        latch.countDown();
-                    }
-
-                    @Override
-                    public void onFailure(Throwable throwable) {
-                        latch.countDown();
-                        logger.error(throwable.getMessage());
-                    }}, Runnable::run);
+                Futures.addCallback(result, new ConfirmedBookingsResponseFutureCallback(logger, latch, outPath),
+                        Runnable::run);
             }
             default -> logger.error("Invalid action");
         }
@@ -84,15 +73,4 @@ public class QueryClient {
         }
     }
 
-
-    private static void generateConfirmedQueryFileContent(List<QueryServiceOuterClass.ConfirmedBooking> list, String outPath){
-        StringBuilder sb = new StringBuilder();
-        sb.append("Slot\t| Visitor\t\t\t\t\t\t\t\t| Ride\n");
-        for(QueryServiceOuterClass.ConfirmedBooking confirmedBooking : list){
-            sb.append(confirmedBooking.getSlot()).append("\t| ")
-                    .append(confirmedBooking.getVisitorId()).append("  | ")
-                    .append(confirmedBooking.getRideName()).append("\n");
-        }
-        createOutputFile(outPath, sb.toString());
-    }
 }
