@@ -2,7 +2,7 @@ package ar.edu.itba.pod.server.server;
 
 
 import ar.edu.itba.pod.server.Models.requests.NotifyRequestModel;
-import ar.edu.itba.pod.server.persistance.RideRepository;
+import ar.edu.itba.pod.server.ridePersistance.RideRepository;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,8 +10,6 @@ import rideBooking.Models;
 import rideBooking.NotifyServiceGrpc;
 import rideBooking.NotifyServiceOuterClass;
 import rideBooking.NotifyServiceOuterClass.NotifyRequest;
-
-import java.util.UUID;
 
 public class NotifyService extends NotifyServiceGrpc.NotifyServiceImplBase{
 

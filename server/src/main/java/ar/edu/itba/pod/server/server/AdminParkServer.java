@@ -4,7 +4,7 @@ import ar.edu.itba.pod.server.Models.ParkPass;
 import ar.edu.itba.pod.server.Models.Ride;
 import ar.edu.itba.pod.server.Models.RideTime;
 import ar.edu.itba.pod.server.Models.requests.AddRideRequestModel;
-import ar.edu.itba.pod.server.persistance.RideRepository;
+import ar.edu.itba.pod.server.ridePersistance.RideRepository;
 import com.google.protobuf.BoolValue;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
