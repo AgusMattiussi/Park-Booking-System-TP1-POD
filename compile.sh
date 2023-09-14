@@ -14,13 +14,13 @@ cd "$temp_dir"
 
 # Server
 tar -xzf "tpe1-g6-server-2023.2Q-bin.tar.gz"
-chmod +x tpe1-g6-server-2023.2Q/*.sh
+chmod +x tpe1-g6-server-2023.2Q/run-server
 sed -i -e 's/\r$//' tpe1-g6-server-2023.2Q/*.sh
 rm "tpe1-g6-server-2023.2Q-bin.tar.gz"
 
 # Client
 tar -xzf "tpe1-g6-client-2023.2Q-bin.tar.gz"
-chmod +x tpe1-g6-client-2023.2Q/*.sh
+chmod +x tpe1-g6-client-2023.2Q/*-cli
 sed -i -e 's/\r$//' tpe1-g6-client-2023.2Q/*.sh
 rm "tpe1-g6-client-2023.2Q-bin.tar.gz"
 
