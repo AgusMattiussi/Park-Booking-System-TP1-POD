@@ -17,12 +17,8 @@ public final class ClientUtils {
     public final static String ACTION_NAME = "action";
     public final static String RIDE_NAME = "ride";
     public final static String ATTRACTION = "attraction";
-    public final static String OPEN_TIME = "openTime";
-    public final static String CLOSE_TIME = "closeTime";
-    public final static String SLOT_MINUTES = "slotGap";
     public final static String DAY = "day";
     public final static String VISITOR_ID = "visitor";
-    public final static String PASS_TYPE = "passType";
     public final static String CAPACITY = "capacity";
     public final static String OUTPATH = "outPath";
     public static final String BOOKING_SLOT = "slot";
@@ -57,6 +53,13 @@ public final class ClientUtils {
             writer.close();
         } catch (IOException e) {
             logger.error("Error creating output file");
+        }
+    }
+
+    public static void validateNullArgument(String arg, String erroMsg) {
+        if (arg == null) {
+            logger.error(erroMsg);
+            System.exit(1);
         }
     }
 }

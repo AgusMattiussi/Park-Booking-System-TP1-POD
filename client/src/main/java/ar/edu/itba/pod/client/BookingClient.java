@@ -20,35 +20,27 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
+import static ar.edu.itba.pod.client.utils.ClientUtils.validateNullArgument;
+
 
 public class BookingClient {
 
     private static final Logger logger = LoggerFactory.getLogger(BookingClient.class);
     private static final CountDownLatch latch = new CountDownLatch(1);
 
-
     public static void main(String[] args) throws InterruptedException, ExecutionException {
-        logger.info("Booking Client Starting ...");
+        logger.info("Booking Client Starting...");
 
         Map<String, String> argMap = ClientUtils.parseArguments(args);
 
-        //TODO: Validaciones
-        //TODO: Validar parametros no null
         final String serverAddress = argMap.get(ClientUtils.SERVER_ADDRESS);
-        final String action = argMap.get(ClientUtils.ACTION_NAME);;
+        final String action = argMap.get(ClientUtils.ACTION_NAME);
 
-        if(serverAddress == null) {
-            logger.error("Server address not specified");
-            System.exit(1);
-        }
-        if(action == null) {
-            logger.error("Action nos specified");
-            System.exit(1);
-        }
+        validateNullArgument(serverAddress, "Ride name not specified");
+        validateNullArgument(action, "Action not specified");
 
         ManagedChannel channel = ClientUtils.buildChannel(serverAddress);
         RideBookingServiceGrpc.RideBookingServiceFutureStub stub = RideBookingServiceGrpc.newFutureStub(channel);
-
 
         switch (action) {
             case "attractions" -> {
@@ -60,6 +52,11 @@ public class BookingClient {
                 final String day = argMap.get(ClientUtils.DAY);
                 final String bookingSlot = argMap.get(ClientUtils.BOOKING_SLOT);
                 final String bookingSlotTo = argMap.get(ClientUtils.BOOKING_SLOT_TO);
+
+                validateNullArgument(rideName, "Attraction name not specified");
+                validateNullArgument(day, "Day not specified");
+                validateNullArgument(bookingSlot, "Booking slot not specified");
+                validateNullArgument(bookingSlot, "Booking slot to not specified");
 
                 RideBookingServiceOuterClass.GetRideAvailabilityRequest.Builder builder = RideBookingServiceOuterClass.GetRideAvailabilityRequest.newBuilder()
                         .setDayOfYear(StringValue.of(day))
@@ -80,6 +77,11 @@ public class BookingClient {
                 final String bookingSlot = argMap.get(ClientUtils.BOOKING_SLOT);
                 final String visitorId = argMap.get(ClientUtils.VISITOR_ID);
 
+                validateNullArgument(rideName, "Attraction name not specified");
+                validateNullArgument(day, "Day not specified");
+                validateNullArgument(bookingSlot, "Booking slot not specified");
+                validateNullArgument(visitorId, "Visitor ID not specified");
+
                 ListenableFuture<RideBookingServiceOuterClass.BookRideResponse> result = stub.bookRide(
                         RideBookingServiceOuterClass.BookRideRequest.newBuilder()
                                 .setRideName(StringValue.of(rideName))
@@ -97,6 +99,10 @@ public class BookingClient {
                 final String bookingSlot = argMap.get(ClientUtils.BOOKING_SLOT);
                 final String visitorId = argMap.get(ClientUtils.VISITOR_ID);
 
+                validateNullArgument(rideName, "Attraction name not specified");
+                validateNullArgument(day, "Day not specified");
+                validateNullArgument(bookingSlot, "Booking slot not specified");
+                validateNullArgument(visitorId, "Visitor ID not specified");
 
                 ListenableFuture<RideBookingServiceOuterClass.BookRideResponse> result = stub.confirmBooking(
                         RideBookingServiceOuterClass.BookRideRequest.newBuilder()
@@ -115,6 +121,10 @@ public class BookingClient {
                 final String bookingSlot = argMap.get(ClientUtils.BOOKING_SLOT);
                 final String visitorId = argMap.get(ClientUtils.VISITOR_ID);
 
+                validateNullArgument(rideName, "Attraction name not specified");
+                validateNullArgument(day, "Day not specified");
+                validateNullArgument(bookingSlot, "Booking slot not specified");
+                validateNullArgument(visitorId, "Visitor ID not specified");
 
                 ListenableFuture<RideBookingServiceOuterClass.BookRideResponse> result = stub.cancelBooking(
                         RideBookingServiceOuterClass.BookRideRequest.newBuilder()
@@ -131,13 +141,11 @@ public class BookingClient {
         }
 
         try {
-            logger.info("Waiting for response ...");
+            logger.info("Waiting for response...");
             latch.await(); // Espera hasta que la operación esté completa
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             logger.error(e.getMessage());
         }
     }
-
-
 }
