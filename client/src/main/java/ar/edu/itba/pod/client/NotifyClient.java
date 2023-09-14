@@ -36,7 +36,6 @@ public class NotifyClient {
 
         switch (action) {
             case "follow" -> {
-
                 final String rideName = argMap.get(ClientUtils.RIDE_NAME);
                 final String day = argMap.get(ClientUtils.DAY);
                 final String visitorID = argMap.get(ClientUtils.VISITOR_ID);

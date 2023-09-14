@@ -1,9 +1,10 @@
 package ar.edu.itba.pod.server.Models;
 
+import ar.edu.itba.pod.server.Models.interfaces.GRPCModel;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import rideBooking.RideBookingServiceOuterClass;
-import java.time.format.DateTimeFormatter;
+
 import java.util.Objects;
 
 // TODO: Mover a carpeta 'Responses'?

@@ -1,8 +1,9 @@
 package ar.edu.itba.pod.server.Models;
 
+import ar.edu.itba.pod.server.Models.interfaces.GRPCModel;
 import rideBooking.QueryServiceOuterClass;
 
-public class ConfirmedBookings implements GRPCModel<rideBooking.QueryServiceOuterClass.ConfirmedBooking>{
+public class ConfirmedBookings implements GRPCModel<QueryServiceOuterClass.ConfirmedBooking> {
     private final String rideName;
     private final String visitorID;
     private final String slot;
