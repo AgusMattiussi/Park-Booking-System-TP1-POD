@@ -133,6 +133,13 @@ public class RideRepository {
         return rides.get(name);
     }
 
+    private Set<Reservation> getVisitorReservations(UUID visitorId){
+        Set<Reservation> visitorReservations = new HashSet<>();
+        for (Map.Entry<String, Ride> ride: rides.entrySet()) {
+            ride.getValue().getBookedSlots();
+        }
+        return  visitorReservations;
+    }
 
     private void validateRideTimeAndAccess(Ride ride, int day, ParkLocalTime timeSlot, UUID visitorId, Models.PassTypeEnum passType){
         if(!ride.isTimeSlotValid(timeSlot))
@@ -142,13 +149,17 @@ public class RideRepository {
             throw new PassNotFoundException(String.format("No valid pass for day %s", day));
 
 
-        ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> booked = ride.getBookedSlots().getOrDefault(day, new ConcurrentHashMap<>());
-        Set<Reservation> bookedReservations = booked.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
-
+        Set<Reservation> bookedReservations = new HashSet<>();
+        for (Map.Entry<String, Ride> r: rides.entrySet()) {
+            List<Reservation> reservations = getUserReservationsByDay(r.getKey(), day, visitorId);
+            if (reservations!=null) {
+                bookedReservations.addAll(reservations);
+            }
+        }
 
         if(passType.equals(Models.PassTypeEnum.HALFDAY) && !parkPassInstance.checkHalfDayPass(timeSlot)) {
             throw new InvalidTimeException(String.format("No valid time for day %s, according to HALFDAY pass", day));
-        }else if(!parkPassInstance.checkVisitorPass(visitorId, day, bookedReservations)) {
+        }else if(!parkPassInstance.checkVisitorPass(visitorId, day)) {
             throw new InvalidPassTypeException(String.format("No reservation for day %s, according to THREE pass, yo already have 3 reservations", day));
         }
     }
@@ -186,13 +197,6 @@ public class RideRepository {
 
         return rideReservations.get(day);
     }
-
-//    private ConcurrentSkipListSet<Reservation> initializeOrGetReservationsForSlot(String rideName, int day, String timeSlot){
-//        Ride ride = rides.get(rideName);
-//        ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> reservationsByDay = ride.getBookedSlots();
-//        ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> reservationsByTime = reservationsByDay.computeIfAbsent(day, k -> new ConcurrentHashMap<>());
-//        return reservationsByTime.computeIfAbsent(timeSlot, k -> new ConcurrentSkipListSet<>());
-//    }
 
 
     /*
@@ -258,7 +262,7 @@ public class RideRepository {
     }
 
     // FIXME: Muy costoso. Tiene sentido agregar otro nivel de indireccion para que sea mas eficiente?
-    private List<Reservation> getUserReservationsByDay(String rideName, int day, UUID visitorId){
+    public List<Reservation> getUserReservationsByDay(String rideName, int day, UUID visitorId){
         ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> reservations = getReservationsByDay(rideName, day);
         if(reservations != null) {
             return reservations.values().stream()
@@ -337,10 +341,12 @@ public class RideRepository {
 
         Ride ride = rides.get(rideName);
 
-        ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> booked = ride.getBookedSlots().get(day);
-        Set<Reservation> bookedReservations = booked.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
+        Set<Reservation> bookedReservations = new HashSet<>();
+        for (Map.Entry<String, Ride> r: rides.entrySet()) {
+            bookedReservations.addAll(Objects.requireNonNull(getUserReservationsByDay(r.getKey(), day, visitorId)));
+        }
 
-        if(!parkPassInstance.checkVisitorPass(visitorId, day, bookedReservations))
+        if(!parkPassInstance.checkVisitorPass(visitorId, day))
             throw new InvalidPassTypeException(String.format("No reservation for day %s, according to THREE pass, yo already have 3 reservations", day));
 
 

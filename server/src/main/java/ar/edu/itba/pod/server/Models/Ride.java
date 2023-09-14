@@ -149,9 +149,6 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
                 ParkLocalTime parkLocalTime =  ParkLocalTime.fromString(timeSlot);
                 ConcurrentSkipListSet<Reservation> reservations = bookedSlots.get(day).get(timeSlot);
 
-                ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> booked = bookedSlots.get(day);
-                Set<Reservation> bookedReservations = booked.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
-
                 // Si tengo para realocar lo hago
                 if(realocateReservations.containsKey(timeSlot)){
                     reservations.addAll(realocateReservations.get(timeSlot));
@@ -166,7 +163,7 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
                     UUID visitorId = r.getVisitorId();
                     Models.PassTypeEnum passType = parkPassInstance.getVisitorParkType(visitorId, day);
 
-                    if (checkVisitorPass(parkPassInstance, passType, visitorId, (ConcurrentSkipListSet<Reservation>) bookedReservations, parkLocalTime, day)) {
+                    if (checkVisitorPass(parkPassInstance, passType, visitorId, parkLocalTime, day)) {
                         if (getSlotsLeft(day, parkLocalTime).get() > 0) { // Si tengo lugar para guardar, guardo
                             if (r.getState() == ReservationState.RELOCATED) {
                                 relocatedAmount += 1;
@@ -223,8 +220,8 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
                 .build();
     }
 
-    private boolean checkVisitorPass(ParkPassRepository parkPassInstance, Models.PassTypeEnum passType, UUID visitorId, ConcurrentSkipListSet<Reservation> reservations, ParkLocalTime parkLocalTime, int day) {
-        return passType.equals(Models.PassTypeEnum.HALFDAY) ? parkPassInstance.checkHalfDayPass(parkLocalTime) : parkPassInstance.checkVisitorPass(visitorId, day, reservations);
+    private boolean checkVisitorPass(ParkPassRepository parkPassInstance, Models.PassTypeEnum passType, UUID visitorId, ParkLocalTime parkLocalTime, int day) {
+        return passType.equals(Models.PassTypeEnum.HALFDAY) ? parkPassInstance.checkHalfDayPass(parkLocalTime) : parkPassInstance.checkVisitorPass(visitorId, day);
     }
 
 

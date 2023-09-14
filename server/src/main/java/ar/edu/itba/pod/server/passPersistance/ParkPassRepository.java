@@ -3,18 +3,19 @@ package ar.edu.itba.pod.server.passPersistance;
 import ar.edu.itba.pod.server.Models.ParkLocalTime;
 import ar.edu.itba.pod.server.Models.ParkPass;
 import ar.edu.itba.pod.server.Models.Reservation;
+import ar.edu.itba.pod.server.Models.Ride;
 import ar.edu.itba.pod.server.exceptions.AlreadyExistsException;
+import ar.edu.itba.pod.server.ridePersistance.RideRepository;
 import rideBooking.Models;
 
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public class ParkPassRepository {
     private static final ParkLocalTime HALF_DAY_TIME = ParkLocalTime.fromString("14:00");
     private static ParkPassRepository instance;
+    private static RideRepository rideRepository = RideRepository.getInstance();
 
     private final ConcurrentMap<UUID, ConcurrentMap<Integer, ParkPass>> parkPasses;
 
@@ -57,7 +58,14 @@ public class ParkPassRepository {
     //    True si puedo seguir reservando, false si no puedo
 //    Chequeo si es half day que la reserva sea antes de las 14hs
 //    y si es three que no tenga 3 o mas ya hechas
-    public boolean checkVisitorPass(UUID visitorId, int day,  Set<Reservation> reservationSet){
+    public boolean checkVisitorPass(UUID visitorId, int day){
+        Set<Reservation> reservationSet = new HashSet<>();
+        for (Map.Entry<String, Ride> r: rideRepository.getRides().entrySet()) {
+            List<Reservation> reservations = rideRepository.getUserReservationsByDay(r.getKey(), day, visitorId);
+            if(reservations != null)
+                reservationSet.addAll(reservations);
+        }
+
         Models.PassTypeEnum passType = this.parkPasses.get(visitorId).get(day).getType();
         int passes = 0;
         if(passType == Models.PassTypeEnum.THREE){
