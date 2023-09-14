@@ -124,9 +124,6 @@ public class RideRepository {
         addSlotsExceptions(rideName, day, capacity);
         Ride ride = this.rides.get(rideName);
 
-        // si ya tiene una capacidad asignada falla, sino la agrega
-        ride.setSlotCapacityForDay(day, capacity);
-
 //        ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> reservationsPerDay = ride.getBookedSlots();
 //        ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> realocateReservations = new ConcurrentHashMap<>();
 

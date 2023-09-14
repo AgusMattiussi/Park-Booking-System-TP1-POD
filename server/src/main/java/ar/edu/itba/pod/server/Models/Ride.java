@@ -134,32 +134,30 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
         return rideTime.getTimeSlotsBetween(startTimeSlot, endTimeSlot);
     }
 
-    public AdminParkServiceOuterClass.SlotCapacityResponse addSlotCapacityPerDay(ParkPassRepository parkPassInstance, int day, int capacity ){
+    public AdminParkServiceOuterClass.SlotCapacityResponse addSlotCapacityPerDay(ParkPassRepository parkPassInstance, int day, int capacity){
+        // si ya tiene una capacidad asignada falla, sino la agrega
+        setSlotCapacityForDay(day, capacity);
+
         int acceptedAmount = 0;
         int relocatedAmount = 0;
         int cancelledAmount = 0;
 
-
         ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> realocateReservations = new ConcurrentHashMap<>();
 
+        if(bookedSlots.containsKey(day)){
+            List<String> timeSlots = rideTime.getTimeSlotsAsStrings();
+            for (int i =0 ; i< timeSlots.size(); i++) {
+                String timeSlot = timeSlots.get(i);
+                ParkLocalTime parkLocalTime =  ParkLocalTime.fromString(timeSlot);
+                ConcurrentSkipListSet<Reservation> reservations = bookedSlots.get(day).get(timeSlot);
 
-
-        if(bookedSlots!=null && bookedSlots.containsKey(day)){
-            // Iterate over each member of the map
-            Set<Map.Entry<String, ConcurrentSkipListSet<Reservation>>> entrySet = bookedSlots.get(day).entrySet();
-            for (Map.Entry<String, ConcurrentSkipListSet<Reservation>> reservations: entrySet) {
-                String reservationTimeString = reservations.getKey();
-
-                ParkLocalTime reservationTime = ParkLocalTime.fromString(reservationTimeString);
-                ConcurrentSkipListSet<Reservation> reservationSet = reservations.getValue();
-//                Si tengo para realocar lo hago
-                if(realocateReservations.containsKey(reservationTimeString)){
-                    reservationSet.addAll(realocateReservations.get(reservationTimeString));
-                    realocateReservations.remove(reservationTimeString);
-                    reservations.setValue(reservationSet);
+                // Si tengo para realocar lo hago
+                if(realocateReservations.containsKey(timeSlot)){
+                    reservations.addAll(realocateReservations.get(timeSlot));
+                    realocateReservations.remove(timeSlot);
                 }
 
-                for(Reservation r : reservationSet){
+                for (Reservation r: reservations) {
 
                     if(r.isRegisteredForNotifications())
                         r.notifySlotsCapacityAdded(capacity);
@@ -167,65 +165,57 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
                     UUID visitorId = r.getVisitorId();
                     Models.PassTypeEnum passType = parkPassInstance.getVisitorParkType(visitorId, day);
 
-                    if (parkPassInstance.checkVisitorPass(passType, visitorId, reservationSet, reservationTime)){
-                        if(getSlotsLeft(day, reservationTime).get() > 0){ // Si tengo lugar para guardar, guardo
-                            if(r.getState() == ReservationState.RELOCATED){
-                                relocatedAmount +=1;
-                            }else{
+                    if (parkPassInstance.checkVisitorPass(passType, visitorId, reservations, parkLocalTime)) {
+                        if (getSlotsLeft(day, parkLocalTime).get() > 0) { // Si tengo lugar para guardar, guardo
+                            if (r.getState() == ReservationState.RELOCATED) {
+                                relocatedAmount += 1;
+                            } else {
                                 r.setConfirmed();
-                                if(r.isRegisteredForNotifications())
+                                if (r.isRegisteredForNotifications())
                                     r.notifyConfirmed();
-                                acceptedAmount +=1;
+                                acceptedAmount += 1;
                             }
-                            decrementCapacity(day, reservationTime);
-                        }else{ // Si no me entran, trato de reubicar
-                            for (Map.Entry<String, ConcurrentSkipListSet<Reservation>>  afterTimeR: entrySet) {
-                                String afterTimeString = afterTimeR.getKey();
-                                ParkLocalTime afterTime = ParkLocalTime.fromString(afterTimeString);
-                                Set<Reservation> afterReservations = afterTimeR.getValue();
+                            decrementCapacity(day, parkLocalTime);
+                        }else{
+                            for(String after :timeSlots.subList(i + 1, timeSlots.size())){
+                                ParkLocalTime afterTime =  ParkLocalTime.fromString(after);
+                                ConcurrentSkipListSet<Reservation> afterReservations = bookedSlots.get(day).get(after);
                                 if(!parkPassInstance.checkVisitorPass(passType, visitorId, afterReservations, afterTime)) {
                                     // Chequeo el pase, y sino puedo salgo
                                     break;
                                 }
-                                // Solo intento slots posteriores al de la reserva original.
-                                if(afterTime.isAfter(reservationTime)){
-                                    int realocated = 0;
-                                    if(realocateReservations.containsKey(afterTimeString)){
-                                        realocated=realocateReservations.get(afterTimeString).size();
-                                    }
-                                    // Si tengo capacidad la reubico (las reservas + las que quiero realocar ahi)
-                                    if(afterReservations.size() + realocated < capacity){
-                                        r.setRelocated();
-                                        if(!realocateReservations.containsKey(afterTimeString)){
-                                            realocateReservations.put(afterTimeString, new ConcurrentSkipListSet<>());
-                                        }
-                                        realocateReservations.get(afterTimeString).add(r);
+                                // Cuantas ya tengo reubicadas aca
+                                int realocated = 0;
+                                if(realocateReservations.containsKey(after)){
+                                    realocated=realocateReservations.get(after).size();
+                                }
+                                // Si tengo capacidad la reubico (las reservas + las que quiero realocar ahi)
+                                if(afterReservations.size() + realocated < capacity){
+                                    r.setRelocated();
+                                    realocateReservations.putIfAbsent(after, new ConcurrentSkipListSet<>());
+                                    realocateReservations.get(after).add(r);
 
-                                        if(r.isRegisteredForNotifications())
-                                            r.notifyRelocated(reservationTime);
-
-//                                      Cancel para la lista en la que estaba originalmente
-                                        r.setCanceled();
-                                        break;
-                                    }
+                                    if(r.isRegisteredForNotifications())
+                                        r.notifyRelocated(parkLocalTime);
+                                    break;
                                 }
                             }
-                        }
-                        // Si sigue pendiente es porque no la pude reubicar => cancelo
-                        if(r.getState() == ReservationState.PENDING){
-                            r.setCanceled();
+                            // Si sigue pendiente es porque no la pude reubicar => cancelo
+                            if(r.getState() == ReservationState.PENDING){
+                                r.setCanceled();
 
-                            if(r.isRegisteredForNotifications())
-                                r.notifyCancelled();
-                            cancelledAmount +=1;
+                                if(r.isRegisteredForNotifications())
+                                    r.notifyCancelled();
+                                cancelledAmount +=1;
+                            }
                         }
                     }
+
                 }
-//                Elimino todas las reservas canceladas o q se realocaron en otra
-                reservationSet.removeIf(reserv -> (reserv.getState().equals(ReservationState.CANCELLED)));
+                // Elimino todas las reservas canceladas o q se realocaron en otra
+                reservations.removeIf(reserv -> (reserv.getState().equals(ReservationState.CANCELLED) || reserv.getState().equals(ReservationState.RELOCATED)));
             }
         }
-
 
         return AdminParkServiceOuterClass.SlotCapacityResponse.newBuilder()
                 .setAcceptedAmount(acceptedAmount).setCancelledAmount(cancelledAmount).setRelocatedAmount(relocatedAmount)
