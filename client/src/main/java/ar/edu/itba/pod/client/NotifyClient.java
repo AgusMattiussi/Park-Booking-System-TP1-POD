@@ -29,14 +29,6 @@ public class NotifyClient {
         final String action = argMap.get(ClientUtils.ACTION_NAME);;
         final String outPath = argMap.get(ClientUtils.OUTPATH);
 
-        System.out.println("Input parameters:");
-        argMap.forEach((key, value) -> {
-            if(value != null)
-                System.out.printf("%s: %s\n", key, value);
-        });
-        System.out.println();
-
-
         ManagedChannel channel = ClientUtils.buildChannel(serverAddress);
         NotifyServiceGrpc.NotifyServiceFutureStub futureStub = NotifyServiceGrpc.newFutureStub(channel);
         NotifyServiceGrpc.NotifyServiceStub customStub = NotifyServiceGrpc.newStub(channel);
@@ -103,7 +95,6 @@ public class NotifyClient {
 
         @Override
         public void onNext(NotifyServiceOuterClass.Notification notification) {
-            //TODO: logger?
             System.out.println(notification.getMessage());
         }
 

@@ -181,7 +181,7 @@ public class RideRepository {
     public ConcurrentMap<String, ConcurrentSkipListSet<Reservation>> getReservationsByDay(String rideName, int day){
         Ride ride = rides.get(rideName);
         if(ride == null)
-            System.out.println("No encontre la ride " + rideName);
+            throw new RideNotFoundException(String.format("Ride '%s' does not exist", rideName));
 
         ConcurrentMap<Integer, ConcurrentMap<String, ConcurrentSkipListSet<Reservation>>> rideReservations = ride.getBookedSlots();
         if(rideReservations == null)
@@ -303,8 +303,8 @@ public class RideRepository {
 
         validateDay(day);
 
+        //TODO: Borrar si no se usa
         Ride ride = rides.get(rideName);
-
         Set<Reservation> bookedReservations = new HashSet<>();
         for (Map.Entry<String, Ride> r: rides.entrySet()) {
             bookedReservations.addAll(Objects.requireNonNull(getUserReservationsByDay(r.getKey(), day, visitorId)));
@@ -346,9 +346,7 @@ public class RideRepository {
     /* Returns the availability for a ride in a given day and time slot */
     private RideAvailability getRideAvailabilityForTimeSlot(String rideName, ParkLocalTime timeSlot, int day) {
         Ride ride = getRide(rideName);
-        // TODO: Extraer validacion al service?
         validateDay(day);
-        //validateRideTimeSlot(ride, day, timeSlot);
 
         return new RideAvailability(timeSlot,
                 getPendingCountForTimeSlot(rideName, day, timeSlot),
@@ -369,10 +367,8 @@ public class RideRepository {
         else {
             timeSlots = new ArrayList<>(Collections.singletonList(startTimeSlot));
         }
-        System.out.println(timeSlots);
 
         for (ParkLocalTime currentTimeSlot : timeSlots) {
-            System.out.println(currentTimeSlot);
             timeSlotAvailability.put(currentTimeSlot, getRideAvailabilityForTimeSlot(rideName, currentTimeSlot, day));
         }
         return timeSlotAvailability;
