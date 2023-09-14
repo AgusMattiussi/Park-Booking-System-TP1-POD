@@ -1,6 +1,7 @@
 package ar.edu.itba.pod.client;
 
 import ar.edu.itba.pod.client.utils.ClientUtils;
+import ar.edu.itba.pod.client.utils.callbacks.CapacitySuggestionResponseFutureCallback;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -47,20 +48,8 @@ public class QueryClient {
                         QueryServiceOuterClass.QueryDayRequest.newBuilder().setDayOfYear(day).build()
                 );
 
-                Futures.addCallback(result, new FutureCallback<>() {
-                    @Override
-                    public void onSuccess(QueryServiceOuterClass.CapacitySuggestionResponse capacitySuggestionResponse) {
-                        System.out.printf("Successfully generated output file %s\n", outPath);
-                        List<QueryServiceOuterClass.CapacitySuggestion> list = capacitySuggestionResponse.getCapacitySuggestionsList();
-                        generateCapacityQueryFileContent(list, outPath);
-                        latch.countDown();
-                    }
-
-                    @Override
-                    public void onFailure(Throwable throwable) {
-                        latch.countDown();
-                        logger.error(throwable.getMessage());
-                    }}, Runnable::run);
+                Futures.addCallback(result, new CapacitySuggestionResponseFutureCallback(logger, latch, outPath),
+                        Runnable::run);
             }
             case "confirmed" -> {
                 logger.info("Confirmed Bookings Query");
@@ -95,16 +84,6 @@ public class QueryClient {
         }
     }
 
-    private static void generateCapacityQueryFileContent(List<QueryServiceOuterClass.CapacitySuggestion> list, String outPath){
-        StringBuilder sb = new StringBuilder();
-        sb.append("Slot\t| Capacity  | Ride\n");
-        for(QueryServiceOuterClass.CapacitySuggestion capacitySuggestion : list){
-           sb.append(capacitySuggestion.getSlot()).append("\t| ")
-                   .append(capacitySuggestion.getSuggestedCapacity()).append("\t\t\t| ")
-                   .append(capacitySuggestion.getRideName()).append("\n");
-        }
-        createOutputFile(outPath, sb.toString());
-    }
 
     private static void generateConfirmedQueryFileContent(List<QueryServiceOuterClass.ConfirmedBooking> list, String outPath){
         StringBuilder sb = new StringBuilder();
