@@ -17,6 +17,7 @@ public final class ClientUtils {
     public final static String SERVER_ADDRESS = "serverAddress";
     public final static String ACTION_NAME = "action";
     public final static String RIDE_NAME = "ride";
+    public final static String ATTRACTION = "attraction";
     public final static String OPEN_TIME = "openTime";
     public final static String CLOSE_TIME = "closeTime";
     public final static String SLOT_MINUTES = "slotGap";

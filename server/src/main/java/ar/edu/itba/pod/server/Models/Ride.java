@@ -231,11 +231,10 @@ public class Ride implements GRPCModel<rideBooking.RideBookingServiceOuterClass.
             if(this.getSlotsLeft(day, timeSlot).get() == 0)
                 throw new ReservationLimitException(String.format("No more reservations available for ride '%s' on day %s at %s", this.name, day, timeSlot));
 
-        ConcurrentMap<Integer,ConcurrentMap<String,ConcurrentSkipListSet<Reservation>>> dayReservations = this.getBookedSlots();
 
-        dayReservations.putIfAbsent(day, new ConcurrentHashMap<>());
+        bookedSlots.putIfAbsent(day, new ConcurrentHashMap<>());
 
-        ConcurrentMap<String,ConcurrentSkipListSet<Reservation>> reservations = dayReservations.get(day);
+        ConcurrentMap<String,ConcurrentSkipListSet<Reservation>> reservations = bookedSlots.get(day);
 
         ReservationState state = isCapacitySet ? ReservationState.CONFIRMED : ReservationState.PENDING;
         Reservation reservation = new Reservation(this.name, visitorId, state, day, timeSlot);

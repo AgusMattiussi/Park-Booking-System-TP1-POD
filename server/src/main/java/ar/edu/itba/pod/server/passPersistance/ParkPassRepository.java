@@ -55,23 +55,29 @@ public class ParkPassRepository {
         return Optional.of(parkPass);
     }
 
-    //    True si puedo seguir reservando, false si no puedo
+//    True si puedo seguir reservando, false si no puedo
 //    Chequeo si es half day que la reserva sea antes de las 14hs
 //    y si es three que no tenga 3 o mas ya hechas
     public boolean checkVisitorPass(UUID visitorId, int day){
-        Set<Reservation> reservationSet = new HashSet<>();
-        for (Map.Entry<String, Ride> r: rideRepository.getRides().entrySet()) {
-            List<Reservation> reservations = rideRepository.getUserReservationsByDay(r.getKey(), day, visitorId);
-            if(reservations != null)
-                reservationSet.addAll(reservations);
+        List<Reservation> reservationSet = new ArrayList<>();
+        System.out.println("ARRANCO A CHEQUEAR");
+        for (String rideName: rideRepository.getRides().keySet()) {
+            System.out.println("Estoy aca");
+            List<Reservation> reservations = rideRepository.getUserReservationsByDay(rideName, day, visitorId);
+            if(reservations != null){
+                System.out.println("Agrego estos: ");
+                System.out.println(reservations);
+                reservationSet.addAll(reservations);}
+
         }
 
+        System.out.println("\n\n\n" + "Set = " + reservationSet + "\n\n\n");
+
         Models.PassTypeEnum passType = this.parkPasses.get(visitorId).get(day).getType();
-        int passes = 0;
         if(passType == Models.PassTypeEnum.THREE){
-            passes = (int) reservationSet.stream().filter(r -> r.getVisitorId().equals(visitorId)).count();
+            System.out.println("Found " + reservationSet.size() + " rides for visitor");
         }
-        return passType == Models.PassTypeEnum.UNLIMITED || passes < 3;
+        return passType == Models.PassTypeEnum.UNLIMITED || reservationSet.size() < 3;
     }
 
     public Models.PassTypeEnum getVisitorParkType(UUID visitorId, int day){
