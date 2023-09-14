@@ -1,6 +1,6 @@
-package ar.edu.itba.pod.server.client;
+package ar.edu.itba.pod.client;
 
-import ar.edu.itba.pod.server.client.utils.ClientUtils;
+import ar.edu.itba.pod.client.utils.ClientUtils;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.Int32Value;
 import com.opencsv.*;
@@ -21,7 +21,7 @@ import java.util.Objects;
 import rideBooking.AdminParkServiceOuterClass.*;
 import rideBooking.Models;
 
-import static ar.edu.itba.pod.server.client.utils.ClientUtils.*;
+import static ar.edu.itba.pod.client.utils.ClientUtils.*;
 
 public class AdminClient {
     private static final Logger logger = LoggerFactory.getLogger(AdminClient.class);

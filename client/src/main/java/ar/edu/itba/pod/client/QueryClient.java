@@ -1,6 +1,6 @@
-package ar.edu.itba.pod.server.client;
+package ar.edu.itba.pod.client;
 
-import ar.edu.itba.pod.server.client.utils.ClientUtils;
+import ar.edu.itba.pod.client.utils.ClientUtils;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
-import static ar.edu.itba.pod.server.client.utils.ClientUtils.*;
+import static ar.edu.itba.pod.client.utils.ClientUtils.*;
 
 public class QueryClient {
     private static final Logger logger = LoggerFactory.getLogger(QueryClient.class);

@@ -1,4 +1,4 @@
-package ar.edu.itba.pod.server.client.utils;
+package ar.edu.itba.pod.client.utils;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
