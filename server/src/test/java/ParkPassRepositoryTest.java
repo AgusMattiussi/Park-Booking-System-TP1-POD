@@ -27,7 +27,7 @@ public class ParkPassRepositoryTest {
 
     @Test
     public void testCheckVisitorPass(){
-        assertTrue(repository.checkVisitorPass(UUID.fromString("ca286ef0-162a-42fd-b9ea-60166ff0a593"), 10));
+        assertTrue(repository.checkVisitorPass(id, 100));
     }
 
     @Test

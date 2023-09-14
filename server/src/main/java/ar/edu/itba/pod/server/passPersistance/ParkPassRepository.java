@@ -74,7 +74,7 @@ public class ParkPassRepository {
         return passType == Models.PassTypeEnum.UNLIMITED || passes < 3;
     }
 
-    public Models.PassTypeEnum  getVisitorParkType(UUID visitorId, int day){
+    public Models.PassTypeEnum getVisitorParkType(UUID visitorId, int day){
         return this.parkPasses.get(visitorId).get(day).getType();
     }
 
