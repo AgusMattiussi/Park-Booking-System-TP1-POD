@@ -75,10 +75,8 @@ public class RideTime implements GRPCModel<Models.RideTime>{
         if(current.isBefore(open))
             current = open;
 
-        while(current.isBefore(endTimeSlot) && current.isBefore(close)){
-            if(startTimeSlot.isBefore(current)){
+        while(current.isBefore(endTimeSlot) && current.isBefore(close) && current.isBefore(startTimeSlot)){
                 current = current.plusMinutes(timeSlotDuration.toMinutes());
-            }
         }
 
         return current;
@@ -91,7 +89,9 @@ public class RideTime implements GRPCModel<Models.RideTime>{
         List<ParkLocalTime> timeSlots = new ArrayList<>();
         ParkLocalTime current = findFirstValidTimeSlotBetween(startTimeSlot, endTimeSlot);
 
-        while(current.plusMinutes(timeSlotDuration.toMinutes()).isBefore(endTimeSlot) && current.plusMinutes(timeSlotDuration.toMinutes()).isBefore(close)){
+        System.out.println("First valid slot is: " + current);
+        while(!current.plusMinutes(timeSlotDuration.toMinutes()).isAfter(endTimeSlot) && !current.plusMinutes(timeSlotDuration.toMinutes()).isAfter(close)){
+            System.out.println("Adding " + current);
             timeSlots.add(current);
             current = current.plusMinutes(timeSlotDuration.toMinutes());
         }

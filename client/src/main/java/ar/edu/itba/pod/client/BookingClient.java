@@ -60,13 +60,9 @@ public class BookingClient {
                 Futures.addCallback(result, new FutureCallback<>() {
                     @Override
                     public void onSuccess(RideBookingServiceOuterClass.GetRideResponse getRideResponse) {
-                        System.out.printf("%-8s- | %-8s- | %-8s- | %-9s- | %-14s%n", "Slot", "Capacity", "Pending", "Confirmed", "Attraction");
+                        System.out.printf(" %-20s | %9s | %10s |%n", "Attraction", "Open Time", "Close Time");
 
-                        System.out.printf("%-8s | %-8s | %-8s | %-8s | %-14s%n", "15:30", "30", "0", "30", "SpaceMountain");
-                        System.out.printf("%-8s | %-8s | %-8s | %-8s | %-14s%n", "15:45", "30", "3", "27", "SpaceMountain");
-                        System.out.printf("%-8s | %-8s | %-8s | %-8s | %-14s%n", "16:00", "30", "0", "5", "SpaceMountain");
-                        System.out.printf("Rides: %d\n", getRideResponse.getRidesCount());
-                        getRideResponse.getRidesList().forEach(ride -> System.out.printf("%s - From %s to %s\n",
+                        getRideResponse.getRidesList().forEach(ride -> System.out.printf(" %-20s | %9s | %10s |%n",
                                 ride.getName().getValue(),
                                 ride.getOpeningTime().getValue(),
                                 ride.getClosingTime().getValue()));
@@ -104,18 +100,17 @@ public class BookingClient {
                 Futures.addCallback(result, new FutureCallback<>() {
                     @Override
                     public void onSuccess(RideBookingServiceOuterClass.GetRideAvailabilityResponse getRideAvailabilityResponse) {
-                        //TODO: Embellecer
+
+                        System.out.printf("%8s | %-8s | %-7s | %-9s | %-20s |%n", "Slot", "Capacity", "Pending", "Confirmed", "Attraction");
+
                         getRideAvailabilityResponse.getRideAvailabilityList().forEach(rideAvailability -> {
                             String rideName = rideAvailability.getRideName().getValue();
                             rideAvailability.getTimeSlotAvailabilityList().forEach(timeSlotAvailability -> {
-                                int capacityVal = timeSlotAvailability.getRideCapacity().getValue();
-                                System.out.printf("Slot\t|Capacity\t|Pending\t|Confirmed\t|Attraction\n%s\t|%d\t|%d\t|%d\t|%s",
-                                        timeSlotAvailability.getTimeSlot().getValue(),
-                                        capacityVal == -1 ? 'X' : capacityVal,
+                                printRideAvailability(timeSlotAvailability.getTimeSlot().getValue(),
+                                        timeSlotAvailability.getRideCapacity().getValue(),
                                         timeSlotAvailability.getPendingBookings().getValue(),
                                         timeSlotAvailability.getConfirmedBookings().getValue(),
-                                        rideName
-                                        );
+                                        rideName);
                             });
                         });
 
@@ -226,5 +221,10 @@ public class BookingClient {
             Thread.currentThread().interrupt();
             logger.error(e.getMessage());
         }
+    }
+
+    private static void printRideAvailability(String slot, int capacity, int pending, int confirmed, String rideName){
+        System.out.printf("%8s | %8s | %7s | %9s | %-20s |%n",
+                slot, capacity != -1 ? capacity:"X" , pending, confirmed, rideName);
     }
 }
